@@ -75,11 +75,11 @@ drop missing
 // save data for analysis
 
 // for males
-keep if gender == "Male"
-cvlasso systolic fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s, lopt
-lasso2 systolic fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s, lic(bic)
+cvlasso systolic fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s if gender == "Male", lopt
+lasso2 systolic fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s if gender == "Male", lic(bic)
+regress systolic fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s if gender == "Male"
 
 // for females
-keep if gender == "Female"
-cvlasso systolic fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s, lopt
-lasso2 systolic fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s, lic(bic)
+cvlasso systolic fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s if gender == "Female", lopt
+lasso2 systolic fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s if gender == "Female", lic(bic)
+regress systolic fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s if gender == "Female"
