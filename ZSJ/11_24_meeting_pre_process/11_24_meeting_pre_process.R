@@ -69,7 +69,8 @@ dr = dr1 %>%
   spread(key = "meas", value = "value" )
 
 demo = demo %>%
-  transmute(seqn = seqn, age = ridageyr, pir = indfmpir, gender = riagendr)
+  # transmute(seqn = seqn, age = ridageyr, pir = indfmpir, gender = riagendr)
+  transmute(seqn = seqn, gender = riagendr)
 
 bpx = bpx %>%
   # most people havn't test 4 so we just ignore it
@@ -81,10 +82,26 @@ bpx_dr = dr %>%
 
 
 df = bpx_dr %>%
-  left_join(demo, by = "seqn") 
+  left_join(demo, by = "seqn") %>%
+  drop_na()
 
 # normalizing process
-df_scale = scale(df[,3:15])
+my_scale = function(x) {
+  re = x %>%
+    mutate(id = row_number()) %>%
+    gather(key = "meas", value = "value", -id) %>%
+    group_by(meas) %>%
+    mutate(avg = mean(value),
+           sd = sd(value)) %>%
+    mutate(value = (value - avg)/sd ) %>%
+    select(id, meas, value) %>%
+    spread(key = "meas", value = "value") %>%
+    select(-id)
+  return(re)
+} 
+
+# df_scale = scale(df[,3:15])
+df_scale = scale(df[,3:13])
 
 df = df %>%
   select(seqn, svy_day, gender) %>%
@@ -101,20 +118,25 @@ df_female = df %>%
   
 library("glmnet")
 
-m1 = glmnet(x = as.matrix(df_male[,c(4:12,15:16)]), 
+m1 = glmnet(x = as.matrix(df_male[,c(4:12)]), 
             y = as.matrix(df_male[,c(13:14)]), 
             family="mgaussian", alpha = 1)
-mod_cv <- cv.glmnet(x=as.matrix(df_male[,c(4:12,15:16)]), y=as.matrix(df_male[,c(13:14)]), family='mgaussian')
-coef(m1, s=c(mod_cv$lambda.1se, m1$lambda[15]))
+mod_cv1 <- cv.glmnet(x=as.matrix(df_male[,c(4:12)]), y=as.matrix(df_male[,c(13:14)]), family='mgaussian', parallel = TRUE)
+coef(m1, s=c(mod_cv1$lambda.1se, m1$lambda[15]))
+
+mod_cv1$lambda.1se
+m11 = lm(as.matrix(df_male[,c(13:14)])~as.matrix(df_male[,c(4:12)]))
 
 
 
-m2 = glmnet(x = as.matrix(df_female[,c(4:12,15:16)]), 
+W
+m2 = glmnet(x = as.matrix(df_female[,c(4:12)]), 
             y = as.matrix(df_female[,c(13:14)]), 
             family="mgaussian", alpha = 1)
-mod_cv <- cv.glmnet(x=as.matrix(df_female[,c(4:12,15:16)]), y=as.matrix(df_female[,c(13:14)]), family='mgaussian')
-coef(m2, s=c(mod_cv$lambda.1se, m1$lambda[24]))
+mod_cv2 <- cv.glmnet(x=as.matrix(df_female[,c(4:12)]), y=as.matrix(df_female[,c(13:14)]), family='mgaussian', parallel = TRUE)
+coef(m2, s=c(mod_cv2$lambda.1se, m1$lambda[24]))
+plot(m2)
 
-
+m21 = lm(as.matrix(df_female[,c(13:14)])~as.matrix(df_female[,c(4:12)]))
 
 
