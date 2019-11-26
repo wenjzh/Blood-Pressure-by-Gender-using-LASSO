@@ -128,11 +128,37 @@ replace gend = -0.5 if gender == "Female"
 mata: wt = (0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 mata: st_matrix("mweight", wt)
 //
-/// SYSTOLIC: lasso
+/// SYSTOLIC #1: lasso
 lasso linear systolic_s gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend protein_s c.protein_s#c.gend fiber_s c.fiber_s#c.gend sodium_s c.sodium_s#c.gend iron_s c.iron_s#c.gend alcohol_s c.alcohol_s#c.gend caff_s c.caff_s#c.gend water_s c.water_s#c.gend, penaltywt(mweight)
 lassocoef, display(coef, standardized)
+matrix sys1 = r(coef)
 //
-/// DIFF: lasso
+/// DIFF #1: lasso
 lasso linear diff gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend protein_s c.protein_s#c.gend fiber_s c.fiber_s#c.gend sodium_s c.sodium_s#c.gend iron_s c.iron_s#c.gend alcohol_s c.alcohol_s#c.gend caff_s c.caff_s#c.gend water_s c.water_s#c.gend, penaltywt(mweight)
 lassocoef, display(coef, standardized)
+matrix diff1 = r(coef)
+
+// Let's do it again
+/// SYSTOLIC #2: lasso
+lasso linear systolic_s gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend protein_s c.protein_s#c.gend fiber_s c.fiber_s#c.gend sodium_s c.sodium_s#c.gend iron_s c.iron_s#c.gend alcohol_s c.alcohol_s#c.gend caff_s c.caff_s#c.gend water_s c.water_s#c.gend, penaltywt(mweight)
+lassocoef, display(coef, standardized)
+matrix sys2 = r(coef)
+//
+/// DIFF #2: lasso
+lasso linear diff gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend protein_s c.protein_s#c.gend fiber_s c.fiber_s#c.gend sodium_s c.sodium_s#c.gend iron_s c.iron_s#c.gend alcohol_s c.alcohol_s#c.gend caff_s c.caff_s#c.gend water_s c.water_s#c.gend, penaltywt(mweight)
+lassocoef, display(coef, standardized)
+matrix diff2 = r(coef)
+
+// Put into excel
+putexcel set group_2.xlsx, sheet(Stata_sys) modify
+putexcel B1 = "Sys #1"
+putexcel B2 = matrix(sys1)
+putexcel D1 = "Sys #2"
+putexcel D2 = matrix(sys2)
+
+putexcel set group_2.xlsx, sheet(Stata_diff) modify
+putexcel B1 = "Diff #1"
+putexcel B2 = matrix(diff1)
+putexcel D1 = "Diff #2"
+putexcel D2 = matrix(diff2)
 
