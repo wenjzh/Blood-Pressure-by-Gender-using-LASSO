@@ -548,7 +548,7 @@ lars_diff =
 <div id="r-using-dplyr-and-glmnet" class="section level2">
 <h2>R using dplyr and glmnet</h2>
 <div id="perparing-data" class="section level3">
-<h3>Perparing Data</h3>
+<h3><em>Perparing Data</em></h3>
 <p>First we will import all 2015-2016 NHANES and check if the data is perpared in the common data folder. If not, we will download the data from the website. Here is a sample importing process</p>
 <pre class="r"><code>library(tidyverse)
 library(Hmisc)
@@ -632,9 +632,9 @@ df = df %&gt;%
 <pre class="r"><code>write.csv(df, file = &quot;../DATA/group_2_df.csv&quot;, row.names = FALSE)</code></pre>
 </div>
 <div id="lasso-in-glmnet" class="section level3">
-<h3>LASSO in glmnet</h3>
+<h3><em>LASSO in glmnet</em></h3>
 <div id="penalty.factor" class="section level4">
-<h4>Penalty.factor</h4>
+<h4><em>Penalty.factor</em></h4>
 <p>Since our purpose is to find how gender effect the relationship between the nutrition intake and the blood pressure measurement, we only penalize the interaction terms by setting the penalty.factor of the interaction terms with a same positive value and let other terms’ zero. The explict form for LASSO minizing goal is shaped to</p>
 <p><span class="math display">\[
 \underset{\beta}{\operatorname{minimize}} \quad \frac{1}{2} \frac{\operatorname{RSS}}{n}+\lambda \sum_{j=1}^{p} \frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}
@@ -643,7 +643,7 @@ df = df %&gt;%
 <pre class="r"><code>library(&quot;glmnet&quot;)</code></pre>
 </div>
 <div id="cross-validation" class="section level4">
-<h4>Cross-validation</h4>
+<h4><em>Cross-validation</em></h4>
 <p>Before we fit the LASSO model for each response, we should first obtain appropriate <span class="math inline">\(\lambda\)</span> to control the L1 punishment on the interaction terms.</p>
 <pre class="r"><code>library(&quot;glmnet&quot;)
 # for bpxsy as response 
@@ -676,7 +676,7 @@ abline(v = mod_cv2$lambda.min)</code></pre>
 <p>As we can find in the figures, as the curve of MSE versus <span class="math inline">\(\lambda\)</span> is not convex, thus different folder selection may result in different <span class="math inline">\(\lambda\)</span> selection. In this point, I select the case that <span class="math inline">\(\lambda_{min}\)</span> is not at the edge condition and set as the parameters for LASSO fitting.</p>
 </div>
 <div id="lasso-modeling" class="section level4">
-<h4>LASSO Modeling</h4>
+<h4><em>LASSO Modeling</em></h4>
 <pre class="r"><code>m1 = glmnet(x = as.matrix(df[,c(4:22)]), 
             y = as.matrix(df[,c(2)]), lambda = min_lambda1,
             family=&quot;gaussian&quot;, alpha = 1, penalty.factor = penalty.factor, nlambda = 100)
@@ -720,7 +720,7 @@ coef</code></pre>
 ## lambda_min_mse   0.08027007  0.06960273</code></pre>
 </div>
 <div id="result" class="section level4">
-<h4>Result</h4>
+<h4><em>Result</em></h4>
 <p>As we are only interested on the interaction terms with non-zero coefficients. The interacted terms for systolic pressure and pressure difference are shown in the following table.</p>
 <p>For systolic pressure:</p>
 <pre><code>## gender_alco gender_caff gender_sodi 

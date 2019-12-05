@@ -254,7 +254,7 @@ coef
 
 ## R using dplyr and glmnet
 
-### Perparing Data
+### _Perparing Data_
 
 First we will import all 2015-2016 NHANES and check if the data is perpared in the common data folder. If not, we will download the data from the website. Here is a sample importing process
 
@@ -386,9 +386,9 @@ Then, in order to compare the different data analysis tools, the lasso analysis 
 write.csv(df, file = "../DATA/group_2_df.csv", row.names = FALSE)
 ```
 
-### LASSO in glmnet
+### _LASSO in glmnet_
 
-#### Penalty.factor
+#### *Penalty.factor*
 
 Since our purpose is to find how gender effect the relationship between the nutrition intake and the blood pressure measurement, we only penalize the interaction terms by setting the penalty.factor of the interaction terms with a same positive value and let other terms' zero. The explict form for LASSO minizing goal is shaped to 
 
@@ -403,7 +403,7 @@ library("glmnet")
 ```
 
 
-#### Cross-validation 
+#### *Cross-validation*
 
 Before we fit the LASSO model for each response, we should first obtain appropriate $\lambda$ to control the L1 punishment on the interaction terms.
 
@@ -441,7 +441,7 @@ abline(v = mod_cv2$lambda.min)
 
 As we can find in the figures, as the curve of MSE versus $\lambda$ is not convex, thus different folder selection may result in different $\lambda$ selection. In this point, I select the case that $\lambda_{min}$ is not at the edge condition and set as the parameters for LASSO fitting.
 
-#### LASSO Modeling
+#### *LASSO Modeling*
 
 ```{r}
 m1 = glmnet(x = as.matrix(df[,c(4:22)]), 
@@ -464,7 +464,7 @@ colnames(coef) = c("systolic", "difference")
 coef
 ```
 
-#### Result
+#### *Result*
 
 As we are only interested on the interaction terms with non-zero coefficients. The interacted terms for systolic pressure and pressure difference are shown in the following table.
 
