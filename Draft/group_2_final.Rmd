@@ -43,10 +43,9 @@ In order to find the variables that have the greatest effect(s) on blood pressur
 ## LASSO
 LASSO, least absolute shrinkage and selector operator, works by finding the coefficients that minimize the OLS equation with a penalty term:
 
-```{r, echo = FALSE, out.width = '30%'}
-knitr::include_graphics("lasso_eq.png")
-```
-
+$$
+\min _{\beta \in \mathbb{R}^{p}}\left\{\frac{1}{N}\|y-X \beta\|_{2}^{2}+\lambda\|\beta\|_{1}\right\}
+$$
 This equation **shrinks** all coefficients like in ridge regression but also sets coefficients below a constant to zero, effectively **selecting** variables that have more extreme coefficients.
 
 The **lambda** in the penalty term effectively determines how extreme the model will shrink the coefficients, so finding the right lambda is important. Usually the lambda chosen is the one that minimizes the MSE from cross-validation.
@@ -73,6 +72,248 @@ This analysis will be done using three different techniques:
 
 ## R using dplyr and glmnet
 
+### Perparing Data
+
+First we will import all 2015-2016 NHANES and check if the data is perpared in the common data folder. If not, we will download the data from the website. Here is a sample importing process
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(tidyverse)
+library(Hmisc)
+library(SASxport)
+```
+
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# read in the  data: -----------------------------------------------------------
+## This data will be used in the question. 
+url_base <- 'https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/'
+
+demo_file <- '../DATA/DEMO_I.XPT'
+if ( !file.exists(demo_file) ) {
+  demo_url <- sprintf('%s/DEMO_I.XPT', url_base)
+  demo <- sasxport.get(demo_url)
+  write.xport(demo, file = demo_file)
+} else {
+  demo <- sasxport.get(demo_file)
+}
+
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+dr1_file <- '../DATA/DR1TOT_I.XPT'
+if ( !file.exists(dr1_file) ) {
+  dr1_url <- sprintf('%s/DR1TOT_I.XPT', url_base)
+  dr1 <- sasxport.get(dr1_url)
+  write.xport(dr1, file = dr1_file)
+} else {
+  dr1 <- sasxport.get(dr1_file)
+}
+
+dr2_file <- '../DATA/DR2TOT_I.XPT'
+if ( !file.exists(demo_file) ) {
+  dr2_url <- sprintf('%s/DR2TOT_I.XPT', url_base)
+  dr2 <- sasxport.get(dr2_url)
+  write.xport(dr2, file = dr2_file)
+} else {
+  dr2 <- sasxport.get(dr2_file)
+}
+
+bpx_file <- '../DATA/BPX_I.XPT'
+if ( !file.exists(bpx_file) ) {
+  bpx_url <- sprintf('%s/BPX_I.XPT', url_base)
+  bpx <- sasxport.get(bpx_url)
+  write.xport(bpx, file = bpx_file)
+} else {
+  bpx <- sasxport.get(bpx_file)
+}
+```
+
+
+
+Then we select only the responents with both two day data collected with no missing value and then take average of them as the average nutrition intake.
+
+Meanwhile, we also standarized the predictors and then merge the data together. We take the systolic and diastolic blood pressures as the responses that are needed to be averaged for each respondent. 
+
+The gender variable are also assigned to -0.5(male) and 0.5(female) to make the expectation of them equal to zero. 
+
+```{r}
+dr1 = dr1 %>%
+  transmute(seqn = seqn, alco = as.numeric(dr1talco),
+            water = as.numeric(dr1.320z), caff = as.numeric(dr1tcaff),
+            sodi = as.numeric(dr1tsodi), fat = as.numeric(dr1ttfat), 
+            sugr = as.numeric(dr1tsugr), iron = as.numeric(dr1tiron),
+            fibe = as.numeric(dr1tfibe), prot = as.numeric(dr1tprot) ) %>%
+  gather(key = "meas", value = "day1", -seqn )
+
+dr2 = dr2 %>%
+  transmute(seqn = seqn, alco = as.numeric(dr2talco),
+            water = as.numeric(dr2.320z), caff = as.numeric(dr2tcaff), 
+            sodi = as.numeric(dr2tsodi), fat = as.numeric(dr2ttfat), 
+            sugr = as.numeric(dr2tsugr), iron = as.numeric(dr2tiron),
+            fibe = as.numeric(dr2tfibe), prot = as.numeric(dr2tprot) ) %>%
+  gather(key = "meas", value = "day2", -seqn )
+
+dr = dr1 %>%
+  left_join(dr2, by = c('seqn', 'meas'))  %>%
+  gather(key = "svy_day", value = "value", day1:day2) %>%
+  spread(key = "meas", value = "value" ) %>%
+  group_by(seqn) %>%
+  summarise(alco = mean(alco), caff = mean(caff),
+            fat = mean(fat), fibe = mean(fibe),
+            iron = mean(iron), prot = mean(prot),
+            sodi = mean(sodi), sugr = mean(sugr), water = mean(water))
+
+demo = demo %>%
+  # transmute(seqn = seqn, age = ridageyr, pir = indfmpir, gender = riagendr)
+  transmute(seqn = seqn, gender = riagendr)
+
+bpx = bpx %>%
+  # most people havn't test 4 so we just ignore it
+  transmute(seqn = seqn, bpxsy_avg = (bpxsy1+bpxsy2+bpxsy3)/3,
+            bpxdiff_avg = ((bpxsy1-bpxdi1)+(bpxsy2-bpxdi2)+(bpxsy3-bpxdi3))/3)
+
+bpx_dr = dr %>%
+  left_join(bpx, by="seqn")
+
+
+df = bpx_dr %>%
+  left_join(demo, by = "seqn") %>%
+  drop_na()
+
+# standardizing process
+df_scale = scale(df[,2:10])
+
+df = df %>%
+  select(seqn, bpxsy_avg, bpxdiff_avg, gender) %>%
+  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = gender-1.5) %>%
+  cbind(df_scale) %>%
+  mutate(gender_alco = gender*alco,
+         gender_caff = gender*caff,
+         gender_fat = gender*fat,
+         gender_fibe = gender*fibe,
+         gender_iron = gender*iron,
+         gender_prot = gender*prot,
+         gender_sodi = gender*sodi,
+         gender_sugr = gender*sugr,
+         gender_water = water*gender)
+```
+
+Then, in order to compare the different data analysis tools, the lasso analysis will be done in the Python
+
+```{r}
+write.csv(df, file = "group_2_df.csv", row.names = FALSE)
+```
+
+### LASSO in glmnet
+
+#### Penalty.factor
+
+Since our purpose is to find how gender effect the relationship between the nutrition intake and the blood pressure measurement, we only penalize the interaction terms by setting the penalty.factor of the interaction terms with a same positive value and let other terms' zero. The explict form for LASSO minizing goal is shaped to 
+
+$$
+\underset{\beta}{\operatorname{minimize}} \quad \frac{1}{2} \frac{\operatorname{RSS}}{n}+\lambda \sum_{j=1}^{p} \frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}
+$$
+
+where $c_j$ is the penalty factor we used for each term
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library("glmnet")
+```
+
+
+#### Cross-validation 
+
+Before we fit the LASSO model for each response, we should first obtain appropriate $\lambda$ to control the L1 punishment on the interaction terms.
+
+```{r}
+library("glmnet")
+# for bpxsy as response 
+set.seed(1984)
+penalty.factor = append(rep(0,10),rep(1, 9))
+
+# The cross-validation using 20 folded training-test set.
+mod_cv1 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(2)]), nfolds = 20, 
+                     type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
+
+
+min_lambda1 = mod_cv1$lambda.min
+
+plot(mod_cv1$lambda, mod_cv1$cvm, ylab = "Mean standard error", xlab = "lambda",
+     main = "Cross-validation for lambda in systolic pressure")
+abline(v = mod_cv1$lambda.min)
+
+# for bpxdiff as response 
+set.seed(1984)
+
+# The cross-validation using 20 folded training-test set.
+mod_cv2 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(3)]), nfolds = 20, 
+                     type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
+
+min_lambda2 = mod_cv2$lambda.min
+
+plot(mod_cv2$lambda, mod_cv2$cvm, ylab = "Mean standard error", xlab = "lambda",
+     main = "Cross-validation for lambda in pressure difference")
+abline(v = mod_cv2$lambda.min)
+
+```
+
+As we can find in the figures, as the curve of MSE versus $\lambda$ is not convex, thus different folder selection may result in different $\lambda$ selection. In this point, I select the case that $\lambda_{min}$ is not at the edge condition and set as the parameters for LASSO fitting.
+
+#### LASSO Modeling
+
+```{r}
+m1 = glmnet(x = as.matrix(df[,c(4:22)]), 
+            y = as.matrix(df[,c(2)]), lambda = min_lambda1,
+            family="gaussian", alpha = 1, penalty.factor = penalty.factor, nlambda = 100)
+
+m2= glmnet(x = as.matrix(df[,c(4:22)]), 
+            y = as.matrix(df[,c(3)]), lambda = min_lambda2,
+            family="gaussian", alpha = 1, penalty.factor = penalty.factor, nlambda = 100)
+
+# data collection
+coef1 = coef(m1)
+coef2 = coef(m2)
+coef = cbind(coef1, coef2)
+lambda = cbind(min_lambda1, min_lambda2)
+rownames(lambda) = "lambda_min_mse"
+coef = rbind(coef, lambda)
+colnames(coef) = c("systolic", "difference")
+
+coef
+```
+
+#### Result
+
+As we are only interested on the interaction terms with non-zero coefficients. The interacted terms for systolic pressure and pressure difference are shown in the following table.
+
+For systolic pressure:
+
+```{r echo=FALSE}
+coef[c(12,13,18),1] 
+```
+
+From the result, we can obtain that comparing to men, women's systolic blood pressure is more likely to be lifted by the increasement of caffeine intaking. However, the increasement of sodium and alcohol intaking will affect more on men's systolic blood pressure.  
+
+For blood pressure difference
+```{r echo=FALSE}
+coef[c(12,13,14,18,20),2] 
+```
+
+As the above table shows, we can obtain that comparing to men, women's blood pressure differnece is more likely to be lifted by the increasement of caffeine and water intaking. However, the increasement of sodium, fat and alcohol intaking will affect more on men's systolic blood pressure.  
+
+In the blood pressure difference result, we can find the interaction term with water is as large as the caffeine term, which might imply that the correlation between the water and caffeine variable. 
+
+Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn't imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (-0.5(male), 0.5(female)). The reasonable interpretation of this result is that women's blood pressure is more sensitive to the caffeine and men's is more sensitive to the alcohol. As the blood pressure may influnce the one's judgement and endurance, the result may imply that women have a better drinking capacity than men.
+
+
+```{r}
+df %>% filter(gender == 0.5) %>% summarise(caff_avg_intake_women = mean(caff))
+df %>% filter(gender == -0.5) %>% summarise(caff_avg_intake_men = mean(caff))
+```
+
+
+
+
 ## Stata
 ```{r setup, include=FALSE}
 ## Set up libraries
@@ -81,8 +322,8 @@ library(tidyr)
 library(Statamarkdown)
 
 ## Set up data
-sys_table <- readr::read_csv("~/2019/UMich/Fall 2019/Stats 506/Group Project/sys_table.csv")
-diff_table <- readr::read_csv("~/2019/UMich/Fall 2019/Stats 506/Group Project/diff_table.csv")
+sys_table <- readr::read_csv("sys_table.csv")
+diff_table <- readr::read_csv("diff_table.csv")
 ```
 ### _Preparing the Data_
 First, we loaded all the 2015 NHANES datasets into Stata. Most of the datasets only needed changes to the labels, but the systolic and diastolic blood pressures needed to be averaged for each respondent. Here is some sample code from preparing the blood pressure dataset:
@@ -187,7 +428,9 @@ Between the two responses, women's blood pressure seems to be more affected by c
 
 This isn't to say that the other variables are not significant in determining blood pressure, only that the other variables affect blood pressure to a similar degree between the two genders.
 
-# **Conclusion**
+# **Conclusion and Disscussion**
+
+Overall, 
 
 # **References**
 Leading causes of death: https://www.cdc.gov/nchs/fastats/leading-causes-of-death.htm

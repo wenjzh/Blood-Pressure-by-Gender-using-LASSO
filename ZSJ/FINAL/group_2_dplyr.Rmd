@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Perparing Data
 
-First we will import all 2015-2016 NHANES and check if the data is perpared in the common data folder. If not, we will download the data from the website.
+First we will import all 2015-2016 NHANES and check if the data is perpared in the common data folder. If not, we will download the data from the website. Here is a sample importing process
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
 library(tidyverse)
@@ -22,7 +22,7 @@ library(SASxport)
 ```
 
 
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # read in the  data: -----------------------------------------------------------
 ## This data will be used in the question. 
 url_base <- 'https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/'
@@ -36,6 +36,9 @@ if ( !file.exists(demo_file) ) {
   demo <- sasxport.get(demo_file)
 }
 
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 dr1_file <- '../../DATA/DR1TOT_I.XPT'
 if ( !file.exists(dr1_file) ) {
   dr1_url <- sprintf('%s/DR1TOT_I.XPT', url_base)
@@ -64,9 +67,13 @@ if ( !file.exists(bpx_file) ) {
 }
 ```
 
+
+
 Then we select only the responents with both two day data collected with no missing value and then take average of them as the average nutrition intake.
 
 Meanwhile, we also standarized the predictors and then merge the data together. We take the systolic and diastolic blood pressures as the responses that are needed to be averaged for each respondent. 
+
+The gender variable are also assigned to -0.5(male) and 0.5(female) to make the expectation of them equal to zero. 
 
 ```{r}
 dr1 = dr1 %>%
@@ -136,14 +143,110 @@ Then, in order to compare the different data analysis tools, the lasso analysis 
 write.csv(df, file = "group_2_df.csv", row.names = FALSE)
 ```
 
-## LASSO in Python
-```{python eval=FALSE}
-import numpy as np
-import sklearn
-import pandas as pd
-import glmnet_py
-from glmnet import glmnet
-import scipy
+## LASSO in glmnet
+
+### Penalty.factor
+
+Since our purpose is to find how gender effect the relationship between the nutrition intake and the blood pressure measurement, we only penalize the interaction terms by setting the penalty.factor of the interaction terms with a same positive value and let other terms' zero. The explict form for LASSO minizing goal is shaped to 
+
+$$
+\underset{\beta}{\operatorname{minimize}} \quad \frac{1}{2} \frac{\operatorname{RSS}}{n}+\lambda \sum_{j=1}^{p} \frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}
+$$
+
+where $c_j$ is the penalty factor we used for each term
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library("glmnet")
 ```
 
+
+### Cross-validation 
+
+Before we fit the LASSO model for each response, we should first obtain appropriate $\lambda$ to control the L1 punishment on the interaction terms.
+
+```{r}
+library("glmnet")
+# for bpxsy as response 
+set.seed(1984)
+penalty.factor = append(rep(0,10),rep(1, 9))
+
+# The cross-validation using 20 folded training-test set.
+mod_cv1 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(2)]), nfolds = 20, 
+                     type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
+
+
+min_lambda1 = mod_cv1$lambda.min
+
+plot(mod_cv1$lambda, mod_cv1$cvm, ylab = "Mean standard error", xlab = "lambda",
+     main = "Cross-validation for lambda in systolic pressure")
+abline(v = mod_cv1$lambda.min)
+
+# for bpxdiff as response 
+set.seed(1984)
+
+# The cross-validation using 20 folded training-test set.
+mod_cv2 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(3)]), nfolds = 20, 
+                     type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
+
+min_lambda2 = mod_cv2$lambda.min
+
+plot(mod_cv2$lambda, mod_cv2$cvm, ylab = "Mean standard error", xlab = "lambda",
+     main = "Cross-validation for lambda in pressure difference")
+abline(v = mod_cv2$lambda.min)
+
+```
+
+As we can find in the figures, as the curve of MSE versus $\lambda$ is not convex, thus different folder selection may result in different $\lambda$ selection. In this point, I select the case that $\lambda_{min}$ is not at the edge condition and set as the parameters for LASSO fitting.
+
+### LASSO Modeling
+
+```{r}
+m1 = glmnet(x = as.matrix(df[,c(4:22)]), 
+            y = as.matrix(df[,c(2)]), lambda = min_lambda1,
+            family="gaussian", alpha = 1, penalty.factor = penalty.factor, nlambda = 100)
+
+m2= glmnet(x = as.matrix(df[,c(4:22)]), 
+            y = as.matrix(df[,c(3)]), lambda = min_lambda2,
+            family="gaussian", alpha = 1, penalty.factor = penalty.factor, nlambda = 100)
+
+# data collection
+coef1 = coef(m1)
+coef2 = coef(m2)
+coef = cbind(coef1, coef2)
+lambda = cbind(min_lambda1, min_lambda2)
+rownames(lambda) = "lambda_min_mse"
+coef = rbind(coef, lambda)
+colnames(coef) = c("systolic", "difference")
+
+coef
+```
+
+### Result
+
+As we are only interested on the interaction terms with non-zero coefficients. The interacted terms for systolic pressure and pressure difference are shown in the following table.
+
+For systolic pressure:
+
+```{r echo=FALSE}
+coef[c(12,13,18),1] 
+```
+
+From the result, we can obtain that comparing to men, women's systolic blood pressure is more likely to be lifted by the increasement of caffeine intaking. However, the increasement of sodium and alcohol intaking will affect more on men's systolic blood pressure.  
+
+For blood pressure difference
+```{r echo=FALSE}
+coef[c(12,13,14,18,20),2] 
+```
+
+As the above table shows, we can obtain that comparing to men, women's blood pressure differnece is more likely to be lifted by the increasement of caffeine and water intaking. However, the increasement of sodium, fat and alcohol intaking will affect more on men's systolic blood pressure.  
+
+In the blood pressure difference result, we can find the interaction term with water is as large as the caffeine term, which might imply that the correlation between the water and caffeine variable. 
+
+Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn't imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (-0.5(male), 0.5(female)). The reasonable interpretation of this result is that women's blood pressure is more sensitive to the caffeine and men's is more sensitive to the alcohol. As the blood pressure may influnce the one's judgement and endurance, the result may imply that women have a better drinking capacity than men.
+
+
+```{r}
+df %>% filter(gender == 0.5) %>% summarise(caff_avg_intake_women = mean(caff))
+df %>% filter(gender == -0.5) %>% summarise(caff_avg_intake_men = mean(caff))
+```
 
