@@ -5,4 +5,4 @@ Diana Liang (Stata)
 
 Sijun Zhang (dplyr, glmnet)
 
-Wenjing Zhou (data.table, lars)
+Wenjing Zhou (data.table, glmnet)

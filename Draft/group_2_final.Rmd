@@ -412,7 +412,7 @@ sys_interact <- sys_table %>%
 knitr::kable(sys_interact, caption = "Systolic Gender-Interaction Coefficients")
 ```
 
-We are using systolic blood pressure as a measure of both systolic and diastolic blood pressure. So, women's blood pressure is slightly more affected by caffeine; while men's blood pressure is more significantly affected by sodium and alcohol.
+We are using systolic blood pressure as a measure of both systolic and diastolic blood pressure. The variables with the greatest difference between men and women are sodium, alcohol, and caffeine. So, women's blood pressure is slightly more affected by caffeine; while men's blood pressure is more significantly affected by sodium and alcohol.
 
 
 ```{r, echo = FALSE, out.width = '50%'}
@@ -422,11 +422,11 @@ diff_interact <- diff_table %>%
 knitr::kable(diff_interact, caption = "Difference Gender-Interaction Coefficients")
 ```
 
-Difference between the blood pressures is a more accurate measure of systolic blood pressure since the only way for there to be a greater difference is if only systolic blood pressure rises without diastolic blood pressure rising. Women's blood pressure is slighly more affected by sugar but more significantly affected by caffeine and water; while men's blood pressure is more affected by alcohol and fat.
+Difference between the blood pressures is a more accurate measure of systolic blood pressure since the only way for there to be a greater difference is if only systolic blood pressure rises without diastolic blood pressure rising. Now the variables with the greatest difference between genders are caffeine, water, alcohol, fat, and sugar. Women's blood pressure is slighly more affected by sugar but more significantly affected by caffeine and water; while men's blood pressure is more affected by alcohol and fat.
 
-Between the two responses, women's blood pressure seems to be more affected by caffeine; and men's blood pressure more affected by alcohol. Interestingly enough, both are non-essential liquids that are gender-coded: men are more socially pressured to drink alcohol while women are more socially pressured to drink caffeine. These results may simply be due to men drinking more alcohol and women drinking more caffeine, so more surveys need to be done where these liquids are equalized between the genders.
+Between the two models, the variables with the greatest difference by gender are alcohol and caffeine, though we can't say if the resulting coefficients are comparable between the models. Women's blood pressure seems to be more affected by caffeine; and men's blood pressure more affected by alcohol. Interestingly enough, both are non-essential liquids that are gender-coded: men are more socially pressured to drink alcohol while women are more socially pressured to drink caffeine. These results may simply be due to men drinking more alcohol and women drinking more caffeine, so more surveys need to be done where these liquids are equalized between the genders.
 
-This isn't to say that the other variables are not significant in determining blood pressure, only that the other variables affect blood pressure to a similar degree between the two genders.
+This isn't to say that the other variables are not significant in determining blood pressure, only that the other variables affect blood pressure to a more equivalent degree between the two genders. Again, LASSO shrinks all coefficients so the remaining variables are the ones that have the most extreme coefficients. Our results, then, only display the variables that have the greatest difference in effect on blood pressure between the genders.
 
 # **Conclusion and Disscussion**
 
