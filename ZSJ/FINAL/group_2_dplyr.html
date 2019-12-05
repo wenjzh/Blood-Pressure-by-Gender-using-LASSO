@@ -556,12 +556,12 @@ coef</code></pre>
 <p>As the above table shows, we can obtain that comparing to men, women’s blood pressure differnece is more likely to be lifted by the increasement of caffeine and water intaking. However, the increasement of sodium, fat and alcohol intaking will affect more on men’s systolic blood pressure.</p>
 <p>In the blood pressure difference result, we can find the interaction term with water is as large as the caffeine term, which might imply that the correlation between the water and caffeine variable.</p>
 <p>Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn’t imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (0.5(male), -0.5(female)). The reasonable interpretation of this result is that women’s blood pressure is more sensitive to the caffeine and men’s is more sensitive to the alcohol. As the blood pressure may influnce the one’s judgement and endurance, the result may imply that women have a better drinking capacity than men.</p>
-<pre class="r"><code>df %&gt;% filter(gender == 0.5) %&gt;% summarise(caff_avg_intake_women = mean(caff))</code></pre>
+<pre class="r"><code>df %&gt;% filter(gender == -0.5) %&gt;% summarise(caff_avg_intake_women = mean(caff))</code></pre>
 <pre><code>##   caff_avg_intake_women
-## 1            0.09454021</code></pre>
-<pre class="r"><code>df %&gt;% filter(gender == -0.5) %&gt;% summarise(caff_avg_intake_men = mean(caff))</code></pre>
+## 1           -0.08935245</code></pre>
+<pre class="r"><code>df %&gt;% filter(gender == 0.5) %&gt;% summarise(caff_avg_intake_men = mean(caff))</code></pre>
 <pre><code>##   caff_avg_intake_men
-## 1         -0.08935245</code></pre>
+## 1          0.09454021</code></pre>
 </div>
 </div>
 </div>

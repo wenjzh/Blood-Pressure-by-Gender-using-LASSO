@@ -38,11 +38,7 @@ We chose the named offenders **alcohol** and **salt**; the macronutrients **tota
 
 # **Methods**
 
-<<<<<<< HEAD
 In order to find the variables that have the greatest effect(s) on blood pressure, we will use LASSO, choosing $\lambda$ by CV.
-=======
-In order to find the variables that have the greatest effect(s) on blood pressure, we will use LASSO, choosing $\lambda$ by CV. 
->>>>>>> d5d3a43a652d6a9dbe3b3cb7ead0623db00d1034
 
 ## LASSO
 LASSO, least absolute shrinkage and selector operator, works by finding the coefficients that minimize the OLS equation with a penalty term:
@@ -211,22 +207,14 @@ set.seed(000)
 cv_syst = cv.glmnet(x=mydata[,3:21],y=mydata[,1], type.measure="mse",
                     family="gaussian",penalty.factor=pnfc,alpha = 1)
 lambda_syst = cv_syst$lambda.min
-<<<<<<< HEAD
 lars_syst =
-=======
-lars_syst = 
->>>>>>> d5d3a43a652d6a9dbe3b3cb7ead0623db00d1034
   glmnet(x=mydata[,3:21],y=mydata[,1], penalty.factor=pnfc, family="gaussian",
          lambda=lambda_syst, alpha = 1,nlambda=100)
 
 cv_diff = cv.glmnet(x=mydata[,3:21],y=mydata[,2], type.measure="mse",
                     family="gaussian", penalty.factor=pnfc,alpha = 1)
 lambda_diff = cv_diff$lambda.min
-<<<<<<< HEAD
 lars_diff =
-=======
-lars_diff = 
->>>>>>> d5d3a43a652d6a9dbe3b3cb7ead0623db00d1034
   glmnet(x=mydata[,3:21],y=mydata[,2], penalty.factor=pnfc, family="gaussian",
          lambda=lambda_diff, alpha = 1,nlambda=100)
 ```
@@ -327,15 +315,9 @@ if ( !file.exists(bpx_file) ) {
 
 Then we select only the respondents with two full days of data collected with no missing values and take average of each variable as the average nutrition intake.
 
-<<<<<<< HEAD
 We also standarized the predictors and merged the data together. Since there are now two days of blood pressure data per respondent, we averaged the systolic and diastolic blood pressures of each respondent as the response variables.
 
 The gender variable was converted from a factor variable into a continuous variable by assigning to 0.5 to male and -0.5 to female, assuring that the expectation of this variable will be zero.
-=======
-We also standarized the predictors and merged the data together. Since there are now two days of blood pressure data per respondent, we averaged the systolic and diastolic blood pressures of each respondent as the response variables. 
-
-The gender variable was converted from a factor variable into a continuous variable by assigning to 0.5 to male and -0.5 to female, assuring that the expectation of this variable will be zero. 
->>>>>>> d5d3a43a652d6a9dbe3b3cb7ead0623db00d1034
 
 ```{r}
 dr1 = dr1 %>%
@@ -496,15 +478,9 @@ For blood pressure difference:
 coef[c(12,13,14,18,20),2]
 ```
 
-<<<<<<< HEAD
 As the table above shows, we can infer that, compared to men's blood pressure difference, women's blood pressure difference is more likely to increase by an increase in caffeine or water intake. However, an increase of sodium, fat or alcohol intake will affect men's difference in blood pressure more.
 
 In the blood pressure difference results, we see that interaction term with water is on the same scale as the term with caffeine, which might imply a correlation between the water and caffeine variables.
-=======
-As the table above shows, we can infer that, compared to men's blood pressure difference, women's blood pressure difference is more likely to increase by an increase in caffeine or water intake. However, an increase of sodium, fat or alcohol intake will affect men's difference in blood pressure more.  
-
-In the blood pressure difference results, we see that interaction term with water is on the same scale as the term with caffeine, which might imply a correlation between the water and caffeine variables. 
->>>>>>> d5d3a43a652d6a9dbe3b3cb7ead0623db00d1034
 
 Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn't imply that women have a higher caffeine intake. The caffeine intake of women is actually lower than men's. The most reasonable interpretation of these results is that women's blood pressure is more sensitive to caffeine while men's is more sensitive to alcohol. Since blood pressure may influence one's judgment and endurance, the result may imply that women have a higher alcohol tolerance than men.
 
@@ -634,11 +610,7 @@ This isn't to say that the other variables are not significant in determining bl
 
 # **Conclusion and Discussion**
 
-<<<<<<< HEAD
 Overall, both glmnet function in R and LASSO command in Stata produced similar results: that women's blood pressure increase is more effected by caffeine, and men's blood pressure increase is more effected by alcohol. Between the two languages, the scale of coefficients and $\lambda$ are not the same, even if they share the same signs and non-zero properties.
-=======
-Overall, both glmnet function in R and LASSO command in Stata produced similar results: that women's blood pressure increase is more effected by caffeine, and men's blood pressure increase is more effected by alcohol. Between the two languages, the scale of coefficients and $\lambda$ are not the same, even if they share the same signs and non-zero properties. 
->>>>>>> d5d3a43a652d6a9dbe3b3cb7ead0623db00d1034
 
 In order to compare contrast the analyses, we will use the $\lambda_{min}$ from Stata's cross-validation and the Stata ending dataset for glmnet modeling.
 
@@ -681,11 +653,7 @@ coef
 
 ```
 
-<<<<<<< HEAD
 Compared to the coefficients produced by Stata, the glmnet coefficient results are not exactly same even though the data frame used for LASSO regression and the $\lambda$ value are exactly copied from the Stata analysis. Although the rankings of the variables with more extreme coefficients are consistent, there are some numeric differences in all the coefficients.
-=======
-Compared to the coefficients produced by Stata, the glmnet coefficient results are not exactly same even though the data frame used for LASSO regression and the $\lambda$ value are exactly copied from the Stata analysis. Although the rankings of the variables with more extreme coefficients are consistent, there are some numeric differences in all the coefficients. 
->>>>>>> d5d3a43a652d6a9dbe3b3cb7ead0623db00d1034
 
 This might be a result from glmnet setting coefficients to zero at larger constant cut-off point than Stata does. It is commonly believed that glmnet's LASSO selection operation is optimized when the number of predictors ($p$) greatly overweigh the number of observations ($n$), with the form $p > n^n$. However, in our models, the number of predictors is only 5% of the number of observations, which implies that glmnet must have done some approximation to shrink the non-zero coefficients to zero. The Stata's result, then, may be closer to the actual model using LASSO, than the glmnet's result.
 

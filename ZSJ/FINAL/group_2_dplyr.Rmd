@@ -246,7 +246,7 @@ Across these two responses, women’s blood pressure seems to be more affected b
 
 
 ```{r}
-df %>% filter(gender == 0.5) %>% summarise(caff_avg_intake_women = mean(caff))
-df %>% filter(gender == -0.5) %>% summarise(caff_avg_intake_men = mean(caff))
+df %>% filter(gender == -0.5) %>% summarise(caff_avg_intake_women = mean(caff))
+df %>% filter(gender == 0.5) %>% summarise(caff_avg_intake_men = mean(caff))
 ```
 
