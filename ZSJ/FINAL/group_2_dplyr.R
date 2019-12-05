@@ -1,8 +1,11 @@
-# https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/DEMO_I.XPT
-# https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/BPX_I.XPT
-# https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/DR1TOT_I.XPT
-# https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/DR2TOT_I.XPT
-
+# Stats 506, Fall 2019
+# Group Project, Group 2
+#
+# This script contains functions for interpreting the 2015-2016 NHANES
+#
+# Author: Sijun Zhang (randyz@umich.edu) (umid:889934761) 
+# Date: Dec 4, 2019
+#80: ---------------------------------------------------------------------------
 library(tidyverse)
 library(Hmisc)
 library(SASxport)
@@ -125,7 +128,7 @@ df = df %>%
 # -0.5 represents male and 0.5 represents female 
 
 # write.csv(df, file = "df.csv")
-  
+
 library("glmnet")
 
 # for bpxsy as response 
@@ -170,21 +173,3 @@ coef(m1, s=c(mod_cv1$lambda.min))
 
 mod_cv1$lambda.min
 m11 = lm(as.matrix(df[,c(12)])~as.matrix(df[,c(2:11, 15:22)]))
-
-
-# eliminate the predictor without gender
-
-# m2 = glmnet(x = as.matrix(df[,c(3,15:23)]), 
-#             y = as.matrix(df[,c(13:14)]), 
-#             family="mgaussian", alpha = 1, penalty.factor = penalty.factor)
-# mod_cv2 <- cv.glmnet(x=as.matrix(df[,c(3,15:23)]), y=as.matrix(df[,c(13:14)]), 
-#                      type.measure = "mse", family='mgaussian', parallel = TRUE, penalty.factor = penalty.factor)
-# coef(m2, s=c(mod_cv2$lambda.min, m2$lambda[15]))
-# 
-# mod_cv2$lambda.min
-# m22 = lm(as.matrix(df[,c(13:14)])~as.matrix(df[,c(15:23)]))
-# m23 = glm(as.matrix(df[,c(13)])~as.matrix(df[,c(3:12)]))
-# m24 = glm(as.matrix(df[,c(14)])~as.matrix(df[,c(3:12)]))
-# plot(m2)
- 
-

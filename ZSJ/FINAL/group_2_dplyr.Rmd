@@ -1,12 +1,28 @@
-# https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/DEMO_I.XPT
-# https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/BPX_I.XPT
-# https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/DR1TOT_I.XPT
-# https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/DR2TOT_I.XPT
+---
+title: "group_2_dplyr"
+author: "Sijun Zhang"
+date: "2019/12/4"
+output: html_document
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# R using Dplyr and glmnet
+
+## Perparing Data
+
+First we will import all 2015-2016 NHANES and check if the data is perpared in the common data folder. If not, we will download the data from the website.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
 library(tidyverse)
 library(Hmisc)
 library(SASxport)
+```
 
+
+```{r}
 # read in the  data: -----------------------------------------------------------
 ## This data will be used in the question. 
 url_base <- 'https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/'
@@ -46,7 +62,13 @@ if ( !file.exists(bpx_file) ) {
 } else {
   bpx <- sasxport.get(bpx_file)
 }
+```
 
+Then we select only the responents with both two day data collected with no missing value and then take average of them as the average nutrition intake.
+
+Meanwhile, we also standarized the predictors and then merge the data together. We take the systolic and diastolic blood pressures as the responses that are needed to be averaged for each respondent. 
+
+```{r}
 dr1 = dr1 %>%
   transmute(seqn = seqn, alco = as.numeric(dr1talco),
             water = as.numeric(dr1.320z), caff = as.numeric(dr1tcaff),
@@ -90,22 +112,7 @@ df = bpx_dr %>%
   left_join(demo, by = "seqn") %>%
   drop_na()
 
-# normalizing process
-my_scale = function(x) {
-  re = x %>%
-    mutate(id = row_number()) %>%
-    gather(key = "meas", value = "value", -id) %>%
-    group_by(meas) %>%
-    mutate(avg = mean(value),
-           sd = sd(value)) %>%
-    mutate(value = (value - avg)/sd ) %>%
-    select(id, meas, value) %>%
-    spread(key = "meas", value = "value") %>%
-    select(-id)
-  return(re)
-} 
-
-# df_scale = scale(df[,3:15])
+# standardizing process
 df_scale = scale(df[,2:10])
 
 df = df %>%
@@ -121,70 +128,22 @@ df = df %>%
          gender_sodi = gender*sodi,
          gender_sugr = gender*sugr,
          gender_water = water*gender)
+```
 
-# -0.5 represents male and 0.5 represents female 
+Then, in order to compare the different data analysis tools, the lasso analysis will be done in the Python
 
-# write.csv(df, file = "df.csv")
-  
-library("glmnet")
+```{r}
+write.csv(df, file = "group_2_df.csv", row.names = FALSE)
+```
 
-# for bpxsy as response 
+## LASSO in Python
+```{python eval=FALSE}
+import numpy as np
+import sklearn
+import pandas as pd
+import glmnet_py
+from glmnet import glmnet
+import scipy
+```
 
-penalty.factor = append(0,rep(1, 18))
-
-m1 = glmnet(x = as.matrix(df[,c(4:22)]), 
-            y = as.matrix(df[,c(2)]), 
-            family="gaussian", alpha = 1, penalty.factor = penalty.factor)
-mod_cv1 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(2)]), 
-                     type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
-coef(m1, s=c(mod_cv1$lambda.min))
-
-mod_cv1$lambda.min
-m11 = lm(as.matrix(df[,c(2)])~as.matrix(df[,c(4:22)]))
-
-
-
-plot(m1)
-
-# using DL Data
-
-
-df = read.csv('../../DL/group_2_stata.csv')
-df = df  %>%
-  mutate(gend_alco = gend*alcohol_s,
-         gend_caff = gend*caff_s,
-         gend_fat = gend*fat_s,
-         gend_fibe = gend*fiber_s,
-         gend_iron = gend*iron_s,
-         gend_prot = gend*protein_s,
-         gend_sodi = gend*sodium_s,
-         gend_sugr = gend*sugar_s,
-         gend_water = water_s*gend)
-
-m1 = glmnet(x = as.matrix(df[,c(4:12,14:23)]), 
-            y = as.matrix(df[,c(2)]), 
-            family="gaussian", alpha = 1, penalty.factor = penalty.factor)
-mod_cv1 <- cv.glmnet(x=as.matrix(df[,c(4:12,14:23)]), y=as.matrix(df[,c(2)]), 
-                     type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
-coef(m1, s=c(mod_cv1$lambda.min))
-
-mod_cv1$lambda.min
-m11 = lm(as.matrix(df[,c(12)])~as.matrix(df[,c(2:11, 15:22)]))
-
-
-# eliminate the predictor without gender
-
-# m2 = glmnet(x = as.matrix(df[,c(3,15:23)]), 
-#             y = as.matrix(df[,c(13:14)]), 
-#             family="mgaussian", alpha = 1, penalty.factor = penalty.factor)
-# mod_cv2 <- cv.glmnet(x=as.matrix(df[,c(3,15:23)]), y=as.matrix(df[,c(13:14)]), 
-#                      type.measure = "mse", family='mgaussian', parallel = TRUE, penalty.factor = penalty.factor)
-# coef(m2, s=c(mod_cv2$lambda.min, m2$lambda[15]))
-# 
-# mod_cv2$lambda.min
-# m22 = lm(as.matrix(df[,c(13:14)])~as.matrix(df[,c(15:23)]))
-# m23 = glm(as.matrix(df[,c(13)])~as.matrix(df[,c(3:12)]))
-# m24 = glm(as.matrix(df[,c(14)])~as.matrix(df[,c(3:12)]))
-# plot(m2)
- 
 
