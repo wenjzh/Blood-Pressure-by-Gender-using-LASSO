@@ -29,7 +29,7 @@ We’re using a combination of 4 datasets (Demographics, Blood Pressure, Total N
 
 ### Code Reviews
 
-We are working on both the [issues](https://github.com/Randyzhang98/STATS506_Proj_02/issues) and commit code reviews. Here some instances about code reviews [READMD.md](https://github.com/Randyzhang98/STATS506_Proj_02/commit/70771c6ef62de5f1877e45f5a53b359115866a12), [STATA_LASSO_penalty](https://github.com/Randyzhang98/STATS506_Proj_02/commit/71b27f4d5a3b6003d2af6e66a4768863589c4357) and [Interactions_glmnet](https://github.com/Randyzhang98/STATS506_Proj_02/commit/ad8a4ace44e241fb9b1add7b817df005a3d1280f).
+We are working on both the [issues](https://github.com/Randyzhang98/STATS506_Proj_02/issues) and commit code reviews. Here some instances about code reviews [README.md](https://github.com/Randyzhang98/STATS506_Proj_02/commit/70771c6ef62de5f1877e45f5a53b359115866a12), [STATA_LASSO_penalty](https://github.com/Randyzhang98/STATS506_Proj_02/commit/71b27f4d5a3b6003d2af6e66a4768863589c4357), [README.md_formula_editing](https://github.com/Randyzhang98/STATS506_Proj_02/commit/34689b24aa2958a0b710594bec6451b24e4fd0c1#commitcomment-36292581) and [Interactions_glmnet](https://github.com/Randyzhang98/STATS506_Proj_02/commit/ad8a4ace44e241fb9b1add7b817df005a3d1280f).
 
 ### Scripts
 
@@ -43,11 +43,6 @@ The final scripts path are linked in the **Author** part and you can find runnin
 Since our purpose is to find how gender effect the relationship between the nutrition intake and the blood pressure measurement, we only penalize the interaction terms by setting the penalty.factor of the interaction terms with a same positive value and let other terms' zero. The explict form for LASSO minizing goal is shaped to
 
 <div align=center><img src="http://chart.googleapis.com/chart?cht=tx&chl= \underset{\beta}{\operatorname{minimize}} \quad \frac{1}{2} \frac{\operatorname{RSS}}{n}+\lambda \sum_{j=1}^{p} \frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}" style="border:none;"></div>
-
-
-<!-- $$
-\underset{\beta}{\operatorname{minimize}} \quad \frac{1}{2} \frac{\operatorname{RSS}}{n}+\lambda \sum_{j=1}^{p} \frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}
-$$ -->
 
 where <img src="http://chart.googleapis.com/chart?cht=tx&chl= c_j" style="border:none;"> is the penalty factor we used for each term
 
