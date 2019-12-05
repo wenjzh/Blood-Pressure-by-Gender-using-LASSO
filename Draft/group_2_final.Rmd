@@ -69,7 +69,7 @@ This analysis will be done using three different techniques:
 # **Analysis** {.tabset .tabset-pills}
 
 ## R using data.table and glmnet
-### _Preparing the Data_
+### Preparing the Data
 
 ```{r dt, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 # Libraries: ------------------------------------------------------------------
@@ -77,6 +77,8 @@ library(Hmisc)
 library(data.table)
 library(glmnet)
 library(SASxport)
+library(tidyverse)
+library(kableExtra)
 
 # read in the  data: -----------------------------------------------------------
 ## This data will be used in the question. 
@@ -154,22 +156,22 @@ mydata=dr1[dr2,on = 'seqn'][demo, , on = 'seqn'][bpx,,on = 'seqn'][,
             ! is.na(fibe) & ! is.na(prot), ]
 ```
 
-### _LASSO Using GLMNET_
+### LASSO Using GLMNET
 At first, we plan to use the "lars" package to do lasso, but we can not add penaly factor in lars. Thus, we chose to use the glmnet package instead. "cv.glmnet", "plot.cv.glmnet" and "glmnet" functions are utilized.
 
-#### *Response and Predictor Variables*
+#### Response and Predictor Variables
 Response variables are systolic blood pressure and the difference in blood pressures, which can reflect the health status of one's blood pressure. The predictor variables, though, needed to be standardized before they could be put into the model. Here is the code to standardize the predictor variables:
 ```{r normalize, echo = TRUE, results = "hide"}
 # Normalize the nutrition predictors
 mydata[,6:14] <- lapply(mydata[,6:14], function(x) c(scale(x)))
 
-# Change gender 1/2 to -0.5/0.5
-mydata = mydata[, gender := ifelse(gender==1, -0.5, 0.5)]
+# Change gender 1/2 to 0.5/-0.5
+mydata = mydata[, gender := fifelse(gender==1, 0.5, -0.5)]
 ```
 
 Gender was turned from 1 for 'male' and 2 for 'female' into setting 'male' to 0.5 and 'female' to -0.5, which helped to interpret the meaning of the coefficients of the interaction terms.
 
-#### *Interaction Terms*
+#### Interaction Terms
 
 Before doing the lasso process, we added the interaction terms between gender and nutrition predictors.
 ```{r interaction, echo = TRUE, results = "hide"}
@@ -186,7 +188,8 @@ mydata = mydata[, .(systolic, diff, gender,alco,water,caff,sodi,fat,sugr,iron,fi
 ```
 
 
-#### *Penalty Weights*
+#### Penalty Weights
+
 Because we're only interested in the selected interaction terms, we only want to set L1-norm penalties on the coefficients of the interaction terms. Thus, we set penalty weight = 1 for the interaction terms (ex. gender_alco) while not penalizing  the independent terms (ex. alco and gender) by setting penalty weight = 0. We would have a penalty factor of:
 
 ````{r penalize factor, echo = TRUE, results = "hide"}
@@ -196,7 +199,9 @@ pnfc=c(rep(0,10),rep(1,9))
 
 In our data.table, the first two columns are the response variables; the 3rd to 10th columns are independent predictors and 11th to 21st columns are the interaction terms.
 
-#### *Modeling*
+#### Cross Validation
+
+Using "cv.glmnet" to choose the lambda with minimum MSE. In general, little inflation of lambda did not cause dramatic differences in LASSO results.
 
 ```{r glmnet, echo = TRUE, results = "hide"}
 # LASSO using glmnet package: alpha = 1 ---------------------------------------
@@ -206,23 +211,17 @@ set.seed(000)
 cv_syst = cv.glmnet(x=mydata[,3:21],y=mydata[,1], type.measure="mse", 
                     family="gaussian",penalty.factor=pnfc,alpha = 1)
 lambda_syst = cv_syst$lambda.min
-lars_syst = 
-  glmnet(x=mydata[,3:21],y=mydata[,1], penalty.factor=pnfc, family="gaussian",
-         lambda=lambda_syst, alpha = 1,nlambda=100)
 
 cv_diff = cv.glmnet(x=mydata[,3:21],y=mydata[,2], type.measure="mse",
                     family="gaussian", penalty.factor=pnfc,alpha = 1)
 lambda_diff = cv_diff$lambda.min
-lars_diff = 
-  glmnet(x=mydata[,3:21],y=mydata[,2], penalty.factor=pnfc, family="gaussian",
-         lambda=lambda_diff, alpha = 1,nlambda=100)
 ```
 
-Using "cv.glmnet" to choose the lambda with minimum MSE. Little inflation of lambda did not cause dramatic differences in LASSO results.
+However, there is one thing we have to pay attention to. From the plots, it is obvious that the curve id not convex, so if we get the lambda of the edge condition (in the first plot, it is the point around 0.2, which may also be chosen as the lambda with minimum MSE), the penalized coefficients will all be shrinked to 0, which is definitely not what we want. Thus, we avoid that by setting seed and choosing proper cross validation result.
 
 Here is the CV plot to choose lambda for the systolic model:
 
-```{r, echo = FALSE, out.width = '50%'}
+```{r, echo = FALSE, out.width = '50%',fig.align='center'}
 plot(cv_syst$lambda, cv_syst$cvm, ylab = "Mean standard error", xlab = "lambda",
      main = "Cross-validation for lambda in systolic pressure")
 abline(v = cv_syst$lambda.min)
@@ -230,14 +229,30 @@ abline(v = cv_syst$lambda.min)
 
 And here is the CV plot to choose lambda for the difference model:
 
-```{r, echo = FALSE, out.width = '50%'}
+```{r, echo = FALSE, out.width = '50%',fig.align='center'}
 plot(cv_diff$lambda, cv_diff$cvm, ylab = "Mean standard error", xlab = "lambda",
      main = "Cross-validation for lambda in pressure difference")
 abline(v = cv_diff$lambda.min)
 ```
 
-### _Results_
-Here are the resulting coefficients from the two models:
+Notes: Here Wenjing used "cv.glmnet" to realize the cross validation. She will update this using self-made cross validation function in the final version.
+
+#### Modeling
+
+After all that preparation work, here we applied the chosen labda and penalty factor into the glmnet function to achieve the goal of only penalizing interaction terms.
+
+```{r model}
+lars_syst = 
+  glmnet(x=mydata[,3:21],y=mydata[,1], penalty.factor=pnfc, family="gaussian",
+         lambda=lambda_syst, alpha = 1,nlambda=100)
+
+lars_diff = 
+  glmnet(x=mydata[,3:21],y=mydata[,2], penalty.factor=pnfc, family="gaussian",
+         lambda=lambda_diff, alpha = 1,nlambda=100)
+```
+
+### Results
+We only focus on the coefficients of the interaction terms. Here are the resulting coefficients combined from the two models. 
 
 ```{r collection, echo = FALSE}
 # data collection
@@ -248,9 +263,16 @@ lambda = cbind(lambda_syst, lambda_diff)
 rownames(lambda) = "lambda_min_mse"
 coef = rbind(coef, lambda)
 colnames(coef) = c("systolic", "difference")
-
-coef
+coef_int = as.matrix(coef)[c(2,12:21),]
+knitr::kable(coef_int, digits=3, caption = "Nutrition Influence on Blood Pressure Across Gender")%>%
+  kable_styling(full_width = F)
 ```
+
+Remember that gender = 0.5 representing male and -0.5 representing female. In our common sense, the propotion of men with hypertention are higher than that of women, which is also supported by our results: coefficients of gender in both model are positive.
+
+In the first model within systolic pressure as response, the variables with the greatest difference between men and women are sodium, alcohol, and caffeine. We can see that men's systolic pressure is affected by alcohol and sodium, while women's blood pressure is affected by caffeine.In the second model within difference between systolic and diastolic pressure as response, the variables with the greatest difference between men and women are sodium, alcohol, fat, water, and caffeine. We can see that men's systolic pressure is more affected by sodium, alcohol and fat, while women's blood pressure is affected by caffeine and water.
+
+To make a robust conclusion, we considered both models together. In conclusion, men's systolic pressure is more affected by sodium, alcohol, while women's blood pressure is affected by caffeine. This results may help people to get more ideas about how to prevent hypertension: men should be more careful about alcohol intaking and women should pay more attention to caffeine intaking.
 
 ## R using dplyr and glmnet
 
