@@ -64,6 +64,7 @@ To run the group_2_final.Rmd file in Draft folder, the following packages should
 | 2.0-18  | glmnet             |
 | 1.12.2  | data.table         |
 | 0.4.0   | Statamarkdown      |
+| 1.1.0   | kableExtra         |
 
 ### Install Statamarkdown
 As *Statamarkdown* doesn't support direct downloading using install.packages(), we can use the devtools package to install it from github.com.
