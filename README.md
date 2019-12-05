@@ -3,6 +3,6 @@
 ## Author: Group 2
 Diana Liang (Stata)
 
-Wenjing Zhou (dplyr, glmnet)
+Sijun Zhang (dplyr, glmnet)
 
-Sijun Zhang (data.table, lars)
+Wenjing Zhou (data.table, lars)
