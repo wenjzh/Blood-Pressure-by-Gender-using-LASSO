@@ -113,7 +113,7 @@ df_scale = scale(df[,2:10])
 
 df = df %>%
   select(seqn, bpxsy_avg, bpxdiff_avg, gender) %>%
-  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = gender-1.5) %>%
+  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = -(gender-1.5) ) %>%
   cbind(df_scale) %>%
   mutate(gender_alco = gender*alco,
          gender_caff = gender*caff,
@@ -171,7 +171,7 @@ plot(mod_cv2$lambda, mod_cv2$cvm, ylab = "Mean standard error", xlab = "lambda",
      main = "Cross-validation for lambda in pressure difference")
 abline(v = mod_cv2$lambda.min)
 
-coef2 = coef(m2, s=c(mod_cv1$lambda.min))
+coef2 = coef(m2, s=c(mod_cv2$lambda.min))
 plot(m2, main = "LASSO for blodd pressure difference")
 
 coef = cbind(coef1, coef2)
@@ -182,6 +182,7 @@ colnames(coef) = c("systolic", "difference")
 
 # using DL Data
 
+# for bpxsy as response 
 set.seed(1949)
 df_L = read.csv('../../DL/final_stata_data.csv')
 df_L = df_L  %>%
@@ -196,16 +197,16 @@ df_L = df_L  %>%
          gend_water = water_s*gend)
 
 m3 = glmnet(x = as.matrix(df_L[,c(5:13, 15:24)]), 
-            y = as.matrix(df_L[,c(2)]), 
+            y = as.matrix(df_L[,c(3)]), 
             family="gaussian", alpha = 1, penalty.factor = penalty.factor)
-mod_cv3 <- cv.glmnet(x=as.matrix(df_L[,c(5:13, 15:24)]), y=as.matrix(df_L[,c(2)]), 
+mod_cv3 <- cv.glmnet(x=as.matrix(df_L[,c(5:13, 15:24)]), y=as.matrix(df_L[,c(3)]), 
                      type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
 
-min_lambda2 = mod_cv2$lambda.min
+min_lambda3 = mod_cv3$lambda.min
 
-plot(mod_cv2$lambda, mod_cv2$cvm, ylab = "Mean standard error", xlab = "lambda",
+plot(mod_cv3$lambda, mod_cv3$cvm, ylab = "Mean standard error", xlab = "lambda",
      main = "Cross-validation for lambda in pressure difference")
-abline(v = mod_cv2$lambda.min)
+abline(v = mod_cv3$lambda.min)
 
-coef2 = coef(m2, s=c(mod_cv1$lambda.min))
-plot(m2, main = "LASSO for blodd pressure difference")
+coef3 = coef(m3, s=c(mod_cv3$lambda.min))
+plot(m3, main = "LASSO for blodd pressure difference")

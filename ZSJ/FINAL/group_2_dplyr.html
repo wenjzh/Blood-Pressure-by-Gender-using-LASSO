@@ -392,7 +392,7 @@ if ( !file.exists(demo_file) ) {
 <pre><code>## Processing SAS dataset DEMO_I     ..</code></pre>
 <p>Then we select only the responents with both two day data collected with no missing value and then take average of them as the average nutrition intake.</p>
 <p>Meanwhile, we also standarized the predictors and then merge the data together. We take the systolic and diastolic blood pressures as the responses that are needed to be averaged for each respondent.</p>
-<p>The gender variable are also assigned to -0.5(male) and 0.5(female) to make the expectation of them equal to zero.</p>
+<p>The gender variable are also assigned to 0.5(male) and -0.5(female) to make the expectation of them equal to zero.</p>
 <pre class="r"><code>dr1 = dr1 %&gt;%
   transmute(seqn = seqn, alco = as.numeric(dr1talco),
             water = as.numeric(dr1.320z), caff = as.numeric(dr1tcaff),
@@ -441,7 +441,7 @@ df_scale = scale(df[,2:10])
 
 df = df %&gt;%
   select(seqn, bpxsy_avg, bpxdiff_avg, gender) %&gt;%
-  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = gender-1.5) %&gt;%
+  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = -(gender-1.5)) %&gt;%
   cbind(df_scale) %&gt;%
   mutate(gender_alco = gender*alco,
          gender_caff = gender*caff,
@@ -522,7 +522,7 @@ coef</code></pre>
 <pre><code>## 21 x 2 sparse Matrix of class &quot;dgCMatrix&quot;
 ##                    systolic  difference
 ## (Intercept)    120.24990505 54.21112287
-## gender          -3.07414257 -3.00998683
+## gender           3.07414257  3.00998683
 ## alco             1.24848776 -0.30323255
 ## caff             3.00505199  1.23334135
 ## fat             -0.24780039  0.38385173
@@ -532,33 +532,36 @@ coef</code></pre>
 ## sodi            -0.36300699 -1.35787021
 ## sugr            -1.16708877 -1.10451324
 ## water            0.40162436 -1.04866484
-## gender_alco     -0.74638289 -1.04502643
-## gender_caff      0.32413095  0.90165409
-## gender_fat       .          -0.83080866
+## gender_alco      0.74638289  1.04502643
+## gender_caff     -0.32413095 -0.90165409
+## gender_fat       .           0.83080866
 ## gender_fibe      .           .         
 ## gender_iron      .           .         
 ## gender_prot      .           .         
-## gender_sodi     -0.57951798 -0.14171136
+## gender_sodi      0.57951798  0.14171136
 ## gender_sugr      .           .         
-## gender_water     .           0.87404138
+## gender_water     .          -0.87404138
 ## lambda_min_mse   0.08027007  0.06960273</code></pre>
+</div>
+<div id="result" class="section level3">
+<h3>Result</h3>
 <p>As we are only interested on the interaction terms with non-zero coefficients. The interacted terms for systolic pressure and pressure difference are shown in the following table.</p>
 <p>For systolic pressure:</p>
 <pre><code>## gender_alco gender_caff gender_sodi 
-##  -0.7463829   0.3241309  -0.5795180</code></pre>
+##   0.7463829  -0.3241309   0.5795180</code></pre>
 <p>From the result, we can obtain that comparing to men, women’s systolic blood pressure is more likely to be lifted by the increasement of caffeine intaking. However, the increasement of sodium and alcohol intaking will affect more on men’s systolic blood pressure.</p>
 <p>For blood pressure difference</p>
 <pre><code>##  gender_alco  gender_caff   gender_fat  gender_sodi gender_water 
-##   -1.0450264    0.9016541   -0.8308087   -0.1417114    0.8740414</code></pre>
+##    1.0450264   -0.9016541    0.8308087    0.1417114   -0.8740414</code></pre>
 <p>As the above table shows, we can obtain that comparing to men, women’s blood pressure differnece is more likely to be lifted by the increasement of caffeine and water intaking. However, the increasement of sodium, fat and alcohol intaking will affect more on men’s systolic blood pressure.</p>
 <p>In the blood pressure difference result, we can find the interaction term with water is as large as the caffeine term, which might imply that the correlation between the water and caffeine variable.</p>
-<p>Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn’t imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (-0.5(male), 0.5(female)). The reasonable interpretation of this result is that women’s blood pressure is more sensitive to the caffeine and men’s is more sensitive to the alcohol. As the blood pressure may influnce the one’s judgement and endurance, the result may imply that women have a better drinking capacity than men.</p>
+<p>Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn’t imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (0.5(male), -0.5(female)). The reasonable interpretation of this result is that women’s blood pressure is more sensitive to the caffeine and men’s is more sensitive to the alcohol. As the blood pressure may influnce the one’s judgement and endurance, the result may imply that women have a better drinking capacity than men.</p>
 <pre class="r"><code>df %&gt;% filter(gender == 0.5) %&gt;% summarise(caff_avg_intake_women = mean(caff))</code></pre>
 <pre><code>##   caff_avg_intake_women
-## 1           -0.08935245</code></pre>
+## 1            0.09454021</code></pre>
 <pre class="r"><code>df %&gt;% filter(gender == -0.5) %&gt;% summarise(caff_avg_intake_men = mean(caff))</code></pre>
 <pre><code>##   caff_avg_intake_men
-## 1          0.09454021</code></pre>
+## 1         -0.08935245</code></pre>
 </div>
 </div>
 </div>

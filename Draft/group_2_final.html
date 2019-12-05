@@ -452,7 +452,7 @@ if ( !file.exists(demo_file) ) {
 <pre><code>## Processing SAS dataset DEMO_I     ..</code></pre>
 <p>Then we select only the responents with both two day data collected with no missing value and then take average of them as the average nutrition intake.</p>
 <p>Meanwhile, we also standarized the predictors and then merge the data together. We take the systolic and diastolic blood pressures as the responses that are needed to be averaged for each respondent.</p>
-<p>The gender variable are also assigned to -0.5(male) and 0.5(female) to make the expectation of them equal to zero.</p>
+<p>The gender variable are also assigned to 0.5(male) and -0.5(female) to make the expectation of them equal to zero.</p>
 <pre class="r"><code>dr1 = dr1 %&gt;%
   transmute(seqn = seqn, alco = as.numeric(dr1talco),
             water = as.numeric(dr1.320z), caff = as.numeric(dr1tcaff),
@@ -501,7 +501,7 @@ df_scale = scale(df[,2:10])
 
 df = df %&gt;%
   select(seqn, bpxsy_avg, bpxdiff_avg, gender) %&gt;%
-  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = gender-1.5) %&gt;%
+  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = -(gender-1.5)) %&gt;%
   cbind(df_scale) %&gt;%
   mutate(gender_alco = gender*alco,
          gender_caff = gender*caff,
@@ -582,7 +582,7 @@ coef</code></pre>
 <pre><code>## 21 x 2 sparse Matrix of class &quot;dgCMatrix&quot;
 ##                    systolic  difference
 ## (Intercept)    120.24990505 54.21112287
-## gender          -3.07414257 -3.00998683
+## gender           3.07414257  3.00998683
 ## alco             1.24848776 -0.30323255
 ## caff             3.00505199  1.23334135
 ## fat             -0.24780039  0.38385173
@@ -592,15 +592,15 @@ coef</code></pre>
 ## sodi            -0.36300699 -1.35787021
 ## sugr            -1.16708877 -1.10451324
 ## water            0.40162436 -1.04866484
-## gender_alco     -0.74638289 -1.04502643
-## gender_caff      0.32413095  0.90165409
-## gender_fat       .          -0.83080866
+## gender_alco      0.74638289  1.04502643
+## gender_caff     -0.32413095 -0.90165409
+## gender_fat       .           0.83080866
 ## gender_fibe      .           .         
 ## gender_iron      .           .         
 ## gender_prot      .           .         
-## gender_sodi     -0.57951798 -0.14171136
+## gender_sodi      0.57951798  0.14171136
 ## gender_sugr      .           .         
-## gender_water     .           0.87404138
+## gender_water     .          -0.87404138
 ## lambda_min_mse   0.08027007  0.06960273</code></pre>
 </div>
 <div id="result" class="section level4">
@@ -608,20 +608,20 @@ coef</code></pre>
 <p>As we are only interested on the interaction terms with non-zero coefficients. The interacted terms for systolic pressure and pressure difference are shown in the following table.</p>
 <p>For systolic pressure:</p>
 <pre><code>## gender_alco gender_caff gender_sodi 
-##  -0.7463829   0.3241309  -0.5795180</code></pre>
+##   0.7463829  -0.3241309   0.5795180</code></pre>
 <p>From the result, we can obtain that comparing to men, women’s systolic blood pressure is more likely to be lifted by the increasement of caffeine intaking. However, the increasement of sodium and alcohol intaking will affect more on men’s systolic blood pressure.</p>
 <p>For blood pressure difference</p>
 <pre><code>##  gender_alco  gender_caff   gender_fat  gender_sodi gender_water 
-##   -1.0450264    0.9016541   -0.8308087   -0.1417114    0.8740414</code></pre>
+##    1.0450264   -0.9016541    0.8308087    0.1417114   -0.8740414</code></pre>
 <p>As the above table shows, we can obtain that comparing to men, women’s blood pressure differnece is more likely to be lifted by the increasement of caffeine and water intaking. However, the increasement of sodium, fat and alcohol intaking will affect more on men’s systolic blood pressure.</p>
 <p>In the blood pressure difference result, we can find the interaction term with water is as large as the caffeine term, which might imply that the correlation between the water and caffeine variable.</p>
-<p>Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn’t imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (-0.5(male), 0.5(female)). The reasonable interpretation of this result is that women’s blood pressure is more sensitive to the caffeine and men’s is more sensitive to the alcohol. As the blood pressure may influnce the one’s judgement and endurance, the result may imply that women have a better drinking capacity than men.</p>
+<p>Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn’t imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (0.5(male), -0.5(female)). The reasonable interpretation of this result is that women’s blood pressure is more sensitive to the caffeine and men’s is more sensitive to the alcohol. As the blood pressure may influnce the one’s judgement and endurance, the result may imply that women have a better drinking capacity than men.</p>
 <pre class="r"><code>df %&gt;% filter(gender == 0.5) %&gt;% summarise(caff_avg_intake_women = mean(caff))</code></pre>
 <pre><code>##   caff_avg_intake_women
-## 1           -0.08935245</code></pre>
+## 1            0.09454021</code></pre>
 <pre class="r"><code>df %&gt;% filter(gender == -0.5) %&gt;% summarise(caff_avg_intake_men = mean(caff))</code></pre>
 <pre><code>##   caff_avg_intake_men
-## 1          0.09454021</code></pre>
+## 1         -0.08935245</code></pre>
 </div>
 </div>
 </div>
@@ -885,8 +885,69 @@ keep seqn systolic diastolic</code></pre>
 </div>
 </div>
 </div>
-<div id="conclusion" class="section level1">
-<h1><strong>Conclusion</strong></h1>
+<div id="conclusion-and-disscussion" class="section level1">
+<h1><strong>Conclusion and Disscussion</strong></h1>
+<p>Overall, both glmnet in R and lasso in Stata reveals the similar result that women’s blood pressure increasement seems to be more affected by caffeine intaking; and men’s blood pressure increasment more affected by alcohol. As in Stata, the response variables are also standarized, the scale of coefficients and <span class="math inline">\(\lambda\)</span> are not the same, but share the same signs and non-zero properties.</p>
+<p>In order to further compare the differences and simpliarities in the separate analyses. We use the <span class="math inline">\(\lambda_{min}\)</span> obatined by Stata’s cross validation in glmnet fitting and import the data used in Stata LASSO fitting.</p>
+<pre class="r"><code>set.seed(1949)
+df_L = read.csv('../DL/final_stata_data.csv')
+df_L = df_L  %&gt;%
+  mutate(gend_alco = gend*alcohol_s,
+         gend_caff = gend*caff_s,
+         gend_fat = gend*fat_s,
+         gend_fibe = gend*fiber_s,
+         gend_iron = gend*iron_s,
+         gend_prot = gend*protein_s,
+         gend_sodi = gend*sodium_s,
+         gend_sugr = gend*sugar_s,
+         gend_water = water_s*gend)
+
+min_lambda3 = 0.0053525
+# for bpxsy as response
+m3 = glmnet(x = as.matrix(df_L[,c(5:13, 15:24)]), 
+            y = as.matrix(df_L[,c(3)]), lambda = min_lambda3,
+            family=&quot;gaussian&quot;, alpha = 1, penalty.factor = penalty.factor)
+
+min_lambda4 = 0.0045235
+# for bpxsy as response
+m4 = glmnet(x = as.matrix(df_L[,c(5:13, 15:24)]), 
+            y = as.matrix(df_L[,c(14)]), lambda = min_lambda4,
+            family=&quot;gaussian&quot;, alpha = 1, penalty.factor = penalty.factor)
+
+coef3 = coef(m3)
+coef4 = coef(m4)
+coef = cbind(coef3, coef4)
+lambda = cbind(min_lambda3, min_lambda4)
+rownames(lambda) = &quot;lambda_min_mse&quot;
+coef = rbind(coef, lambda)
+colnames(coef) = c(&quot;systolic&quot;, &quot;difference&quot;)
+
+coef</code></pre>
+<pre><code>21 x 2 sparse Matrix of class &quot;dgCMatrix&quot;
+                   systolic   difference
+(Intercept)    -0.003542060 -0.006066645
+fat_s          -0.013585273  0.033776976
+sugar_s        -0.064710638 -0.059571056
+protein_s      -0.008923244 -0.039584565
+fiber_s         0.024640448 -0.015679871
+sodium_s       -0.020137625 -0.094914845
+iron_s         -0.043457532  0.019640791
+alcohol_s       0.071321914 -0.043155000
+caff_s          0.165578857  0.034688245
+water_s         0.022275514 -0.084906301
+gend            0.169448096  0.164594885
+gend_alco       0.034263346  0.055707825
+gend_caff      -0.012709718 -0.054772103
+gend_fat        .            0.059130121
+gend_fibe       .            .          
+gend_iron       .            .          
+gend_prot       .            .          
+gend_sodi       0.027619267  .          
+gend_sugr       .           -0.005689092
+gend_water      .           -0.063224977
+lambda_min_mse  0.005352500  0.004523500</code></pre>
+<p>Comparing to the coefficient produced by Stata, although the data frame used for LASSO regression is consistent and the <span class="math inline">\(\lambda\)</span> value is strictly copied from Stata’s cross-validation output, the coefficient results are not exactly same. Although the significances and signs of over-represented variables are consistent, there are some numeric differences in all the coefficients.</p>
+<p>It might be owing to that the glmnet result shrinks some coefficients to zero but the Stata does not. It is commonly believed that the sparsity of LASSO’s result only appears when the number of predictor greatly larger than the number of samples, which is usually has the form that <span class="math inline">\(p &gt; n^n\)</span>. However, in our data set, the number of predictors is only 5% of the number of samples, which indicates that glmnet must have done some approximation to shrink the non-zero coefficients to zero. The Stata’s result is closer to the exact fitting result in LASSO, comparing to the glmnet.</p>
 </div>
 <div id="references" class="section level1">
 <h1><strong>References</strong></h1>

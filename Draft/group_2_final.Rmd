@@ -134,7 +134,7 @@ Then we select only the responents with both two day data collected with no miss
 
 Meanwhile, we also standarized the predictors and then merge the data together. We take the systolic and diastolic blood pressures as the responses that are needed to be averaged for each respondent. 
 
-The gender variable are also assigned to -0.5(male) and 0.5(female) to make the expectation of them equal to zero. 
+The gender variable are also assigned to 0.5(male) and -0.5(female) to make the expectation of them equal to zero. 
 
 ```{r}
 dr1 = dr1 %>%
@@ -185,7 +185,7 @@ df_scale = scale(df[,2:10])
 
 df = df %>%
   select(seqn, bpxsy_avg, bpxdiff_avg, gender) %>%
-  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = gender-1.5) %>%
+  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = -(gender-1.5)) %>%
   cbind(df_scale) %>%
   mutate(gender_alco = gender*alco,
          gender_caff = gender*caff,
@@ -303,7 +303,7 @@ As the above table shows, we can obtain that comparing to men, women's blood pre
 
 In the blood pressure difference result, we can find the interaction term with water is as large as the caffeine term, which might imply that the correlation between the water and caffeine variable. 
 
-Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn't imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (-0.5(male), 0.5(female)). The reasonable interpretation of this result is that women's blood pressure is more sensitive to the caffeine and men's is more sensitive to the alcohol. As the blood pressure may influnce the one's judgement and endurance, the result may imply that women have a better drinking capacity than men.
+Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn't imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (0.5(male), -0.5(female)). The reasonable interpretation of this result is that women's blood pressure is more sensitive to the caffeine and men's is more sensitive to the alcohol. As the blood pressure may influnce the one's judgement and endurance, the result may imply that women have a better drinking capacity than men.
 
 
 ```{r}
@@ -430,7 +430,53 @@ This isn't to say that the other variables are not significant in determining bl
 
 # **Conclusion and Disscussion**
 
-Overall, 
+Overall, both glmnet in R and lasso in Stata reveals the similar result that women's blood pressure increasement seems to be more affected by caffeine intaking; and men's blood pressure increasment more affected by alcohol. As in Stata, the response variables are also standarized, the scale of coefficients and $\lambda$ are not the same, but share the same signs and non-zero properties. 
+
+In order to further compare the differences and simpliarities in the separate analyses. We use the $\lambda_{min}$ obatined by Stata's cross validation in glmnet fitting and import the data used in Stata LASSO fitting.
+
+
+```{r}
+set.seed(1949)
+df_L = read.csv('../DL/final_stata_data.csv')
+df_L = df_L  %>%
+  mutate(gend_alco = gend*alcohol_s,
+         gend_caff = gend*caff_s,
+         gend_fat = gend*fat_s,
+         gend_fibe = gend*fiber_s,
+         gend_iron = gend*iron_s,
+         gend_prot = gend*protein_s,
+         gend_sodi = gend*sodium_s,
+         gend_sugr = gend*sugar_s,
+         gend_water = water_s*gend)
+
+min_lambda3 = 0.0053525
+# for bpxsy as response
+m3 = glmnet(x = as.matrix(df_L[,c(5:13, 15:24)]), 
+            y = as.matrix(df_L[,c(3)]), lambda = min_lambda3,
+            family="gaussian", alpha = 1, penalty.factor = penalty.factor)
+
+min_lambda4 = 0.0045235
+# for bpxsy as response
+m4 = glmnet(x = as.matrix(df_L[,c(5:13, 15:24)]), 
+            y = as.matrix(df_L[,c(14)]), lambda = min_lambda4,
+            family="gaussian", alpha = 1, penalty.factor = penalty.factor)
+
+coef3 = coef(m3)
+coef4 = coef(m4)
+coef = cbind(coef3, coef4)
+lambda = cbind(min_lambda3, min_lambda4)
+rownames(lambda) = "lambda_min_mse"
+coef = rbind(coef, lambda)
+colnames(coef) = c("systolic", "difference")
+
+coef
+
+```
+
+Comparing to the coefficient produced by Stata, although the data frame used for LASSO regression is consistent and the $\lambda$ value is strictly copied from Stata's cross-validation output, the coefficient results are not exactly same. Although the significances and signs of over-represented variables are consistent, there are some numeric differences in all the coefficients. 
+
+It might be owing to that the glmnet result shrinks some coefficients to zero but the Stata does not. It is commonly believed that the sparsity of LASSO's result only appears when the number of predictor greatly larger than the number of samples, which is usually has the form that $p > n^n$. However, in our data set, the number of predictors is only 5% of the number of samples, which indicates that glmnet must have done some approximation to shrink the non-zero coefficients to zero. The Stata's result is closer to the exact fitting result in LASSO, comparing to the glmnet. 
+
 
 # **References**
 Leading causes of death: https://www.cdc.gov/nchs/fastats/leading-causes-of-death.htm

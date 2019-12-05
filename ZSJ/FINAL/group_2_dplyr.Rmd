@@ -73,7 +73,7 @@ Then we select only the responents with both two day data collected with no miss
 
 Meanwhile, we also standarized the predictors and then merge the data together. We take the systolic and diastolic blood pressures as the responses that are needed to be averaged for each respondent. 
 
-The gender variable are also assigned to -0.5(male) and 0.5(female) to make the expectation of them equal to zero. 
+The gender variable are also assigned to 0.5(male) and -0.5(female) to make the expectation of them equal to zero. 
 
 ```{r}
 dr1 = dr1 %>%
@@ -124,7 +124,7 @@ df_scale = scale(df[,2:10])
 
 df = df %>%
   select(seqn, bpxsy_avg, bpxdiff_avg, gender) %>%
-  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = gender-1.5) %>%
+  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = -(gender-1.5)) %>%
   cbind(df_scale) %>%
   mutate(gender_alco = gender*alco,
          gender_caff = gender*caff,
@@ -242,7 +242,7 @@ As the above table shows, we can obtain that comparing to men, women's blood pre
 
 In the blood pressure difference result, we can find the interaction term with water is as large as the caffeine term, which might imply that the correlation between the water and caffeine variable. 
 
-Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn't imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (-0.5(male), 0.5(female)). The reasonable interpretation of this result is that women's blood pressure is more sensitive to the caffeine and men's is more sensitive to the alcohol. As the blood pressure may influnce the one's judgement and endurance, the result may imply that women have a better drinking capacity than men.
+Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn't imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (0.5(male), -0.5(female)). The reasonable interpretation of this result is that women's blood pressure is more sensitive to the caffeine and men's is more sensitive to the alcohol. As the blood pressure may influnce the one's judgement and endurance, the result may imply that women have a better drinking capacity than men.
 
 
 ```{r}
