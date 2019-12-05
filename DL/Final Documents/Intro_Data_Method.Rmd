@@ -1,0 +1,69 @@
+---
+title: "Intro_Data_Methods"
+author: "Diana Liang"
+date: "12/4/2019"
+output: html_document
+---
+
+# **Introduction**
+
+With the advent of mass-produced antibiotics and the success of nation-wide inoculation campaigns, infectious diseases that were once serious threats to Americans’ health no longer dominate the leading causes of death. Instead chronic diseases; such as heart disease, cancer, and diabetes; have taken their place. Research is ongoing to pinpoint causes for these diseases, but so far the most widely-accepted explanation is lifestyle choices. Data-backed government websites and rumor-based fitness bloggers agree that what we eat and how we move greatly affects the chances of developing chronic diseases.
+
+Yet, past research is heavily skewed towards studying the male body. Maya Dusenbery discusses in her book _Doing Harm_ how women are often disadvantaged by data that is mainly collected from men. She argues that many of the conclusions about common symptoms and reactions did not posit the possibility of important difference among genders and sexes, and assumed that the male-dominated model could represent all. While researchers are updating standards to provide more inclusive advice, we still implicitly accept that assumption in most medical situations.
+
+The combination of rising chronic diseases and lack of diverse gender representation in research provides a unique perspective on the NHANES data. We chose to investigate the effect of consumption habits on blood pressure, a known symptom of different chronic diseases, without the assumption that all genders would react the same. Will the factors that are most important in determining blood pressure be different between males the females? We will show in the following analysis that there are certain foods that affect one gender more than the other, and that these foods change depending on the type of blood pressure being measured. (The study only provided answers of ‘male’ and ‘female’ as identifiable genders, so those will be the only ones in this analysis. Also sex and gender will be used interchangeably in this context.) 
+
+
+# **Data**
+
+We’re using a combination of 4 datasets from the 2015 NHANES.
+
+## Datasets {.tabset .tabset-pills}
+
+### Demographics
+
+The demographics dataset (DEMO_I.XPT) provides us with the **gender markers** for each respondent.
+
+### Blood Pressure
+
+The blood pressure dataset (BPX_I.XPT) gives 4 different readings of systolic and diastolic blood pressure, and we took an average of the first three for each type of blood pressure for each respondent since the 4th is mainly missing. 
+
+We are going to have **response variables ‘systolic’**, which will give us the generally higher or lower blood pressure, and **‘difference’** (calculated as systolic – diastolic) which will give us situations when only systolic blood pressure increases.
+
+### Total Nutrients 
+
+The nutrient datasets (DR1TOT_I.XPT and DR2TOT_I.XPT) provides the **predictor variables**. 
+
+We chose the named offenders **alcohol** and **salt**; the macronutrients **total fat, sugar, and protein**; as well as **iron** to represent a meat heavy diet and **dietary fiber** to represent a vegetable heavy diet. We also included **caffeine**, which is highly contested as influencing blood pressure, and **water** as a neutral beverage.
+
+# **Methods**
+
+In order to find the variables that have the greatest effect(s) on blood pressure, we will use LASSO, choosing lambda by CV. 
+
+## LASSO
+LASSO, least absolute shrinkage and selector operator, works by finding the coefficients that minimize the OLS equation with a penalty term:
+
+```{r, echo = FALSE, out.width = '30%'}
+knitr::include_graphics("lasso_eq.png")
+```
+
+This equation **shrinks** all coefficients like in ridge regression but also sets coefficients below a constant to zero, effectively **selecting** variables that have more extreme coefficients.
+
+The **lambda** in the penalty term effectively determines how extreme the model will shrink the coefficients, so finding the right lambda is important. Usually the lambda chosen is the one that minimizes the MSE from cross-validation.
+
+## Interaction with Gender
+
+Instead of using gender as a factor or binary variable, we will be converting gender into a continuous numerical variable by setting **‘male’ to 0.5** and **‘female’ to -0.5**. This way, the interaction coefficients can be interpreted as that variable being more important for men or women in determining blood pressure.
+
+We’re only interested in the **interaction between the predictor variables and gender**, so we will be putting penalties only on the interaction terms and not on the independent terms. The remaining interaction coefficients,then, will be the variables that may unequally affect the blood pressure depending on gender. 
+
+## Languages/Tools
+
+This analysis will be done using three different techniques:
+
+1.	R with data.table to prepare the data, and lasr to use LASSO
+
+2.	R with dplyr to prepare, the data and glmnet to use LASSO
+
+3.	Stata with the base code to both prepare the data and use LASSO
+
