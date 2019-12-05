@@ -202,19 +202,20 @@ In our data.table, the first two columns are the response variables; the 3rd to 
 # LASSO using glmnet package: alpha = 1 ---------------------------------------
 mydata = as.matrix(mydata)
 
-cv_syst = cv.glmnet(x=mydata[,3:21],y=mydata[,1], type.measure="mse",
-                        penalty.factor=pnfc,alpha = 1)
+set.seed(000)
+cv_syst = cv.glmnet(x=mydata[,3:21],y=mydata[,1], type.measure="mse", 
+                    family="gaussian",penalty.factor=pnfc,alpha = 1)
 lambda_syst = cv_syst$lambda.min
 lars_syst = 
-  glmnet(x=mydata[,3:21],y=mydata[,1], penalty.factor=pnfc, 
-         lambda=lambda_syst, alpha = 1)
+  glmnet(x=mydata[,3:21],y=mydata[,1], penalty.factor=pnfc, family="gaussian",
+         lambda=lambda_syst, alpha = 1,nlambda=100)
 
 cv_diff = cv.glmnet(x=mydata[,3:21],y=mydata[,2], type.measure="mse",
-                        penalty.factor=pnfc,alpha = 1)
+                    family="gaussian", penalty.factor=pnfc,alpha = 1)
 lambda_diff = cv_diff$lambda.min
 lars_diff = 
-  glmnet(x=mydata[,3:21],y=mydata[,2], penalty.factor=pnfc, 
-         lambda=lambda_diff, alpha = 1)
+  glmnet(x=mydata[,3:21],y=mydata[,2], penalty.factor=pnfc, family="gaussian",
+         lambda=lambda_diff, alpha = 1,nlambda=100)
 ```
 
 Using "cv.glmnet" to choose the lambda with minimum MSE. Little inflation of lambda did not cause dramatic differences in LASSO results.
