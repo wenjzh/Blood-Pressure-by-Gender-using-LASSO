@@ -164,7 +164,7 @@ Response variables are systolic blood pressure and the difference in blood press
 mydata[,6:14] <- lapply(mydata[,6:14], function(x) c(scale(x)))
 
 # Change gender 1/2 to -0.5/0.5
-mydata = mydata[, gender := fifelse(gender==1, -0.5, 0.5)]
+mydata = mydata[, gender := ifelse(gender==1, -0.5, 0.5)]
 ```
 
 Gender was turned from 1 for 'male' and 2 for 'female' into setting 'male' to 0.5 and 'female' to -0.5, which helped to interpret the meaning of the coefficients of the interaction terms.
@@ -383,7 +383,7 @@ df = df %>%
 Then, in order to compare the different data analysis tools, the lasso analysis will be done in the Python
 
 ```{r}
-write.csv(df, file = "group_2_df.csv", row.names = FALSE)
+write.csv(df, file = "../DATA/group_2_df.csv", row.names = FALSE)
 ```
 
 ### LASSO in glmnet
@@ -504,8 +504,8 @@ library(tidyr)
 library(Statamarkdown)
 
 ## Set up data
-sys_table <- readr::read_csv("sys_table.csv")
-diff_table <- readr::read_csv("diff_table.csv")
+sys_table <- readr::read_csv("./DL_results/sys_table.csv")
+diff_table <- readr::read_csv("./DL_results/diff_table.csv")
 ```
 ### _Preparing the Data_
 First, we loaded all the 2015 NHANES datasets into Stata. Most of the datasets only needed changes to the labels, but the systolic and diastolic blood pressures needed to be averaged for each respondent. Here is some sample code from preparing the blood pressure dataset:
@@ -513,7 +513,7 @@ First, we loaded all the 2015 NHANES datasets into Stata. Most of the datasets o
 ```{stata, echo = TRUE, results = "hide"}
 // Work with Blood Pressure dataset
 /// set up data
-import sasxport5 BPX_I.XPT, clear
+import sasxport5 "../DATA/BPX_I.XPT", clear
 keep seqn bpxsy1 bpxdi1 bpxsy2 bpxdi2 bpxsy3 bpxdi3
 /// get rid of missing values
 generate missing = 0
@@ -569,13 +569,13 @@ Using CV to choose the lambdas results in slightly different lambdas each time t
 Here is the CV plot to choose lambda for the systolic model:
 
 ```{r, echo = FALSE, out.width = '50%'}
-knitr::include_graphics("sys_cvplot.png")
+knitr::include_graphics("./DL_results/sys_cvplot.png")
 ```
 
 And here is the CV plot to choose lambda for the difference model:
 
 ```{r, echo = FALSE, out.width = '50%'}
-knitr::include_graphics("diff_cvplot.png")
+knitr::include_graphics("./DL_results/diff_cvplot.png")
 ```
 
 ### _Results_
