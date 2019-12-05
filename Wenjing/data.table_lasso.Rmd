@@ -18,6 +18,8 @@ library(Hmisc)
 library(data.table)
 library(glmnet)
 library(SASxport)
+library(tidyverse)
+library(kableExtra)
 
 # read in the  data: -----------------------------------------------------------
 ## This data will be used in the question. 
@@ -104,8 +106,8 @@ Response variables are systolic blood pressure and the difference in blood press
 # Normalize the nutrition predictors
 mydata[,6:14] <- lapply(mydata[,6:14], function(x) c(scale(x)))
 
-# Change gender 1/2 to -0.5/0.5
-mydata = mydata[, gender := fifelse(gender==1, -0.5, 0.5)]
+# Change gender 1/2 to 0.5/-0.5
+mydata = mydata[, gender := fifelse(gender==1, 0.5, -0.5)]
 ```
 
 Gender was turned from 1 for 'male' and 2 for 'female' into setting 'male' to 0.5 and 'female' to -0.5, which helped to interpret the meaning of the coefficients of the interaction terms.
@@ -160,7 +162,7 @@ However, there is one thing we have to pay attention to. From the plots, it is o
 
 Here is the CV plot to choose lambda for the systolic model:
 
-```{r, echo = FALSE, out.width = '50%'}
+```{r, echo = FALSE, out.width = '50%', fig.align='center'}
 plot(cv_syst$lambda, cv_syst$cvm, ylab = "Mean standard error", xlab = "lambda",
      main = "Cross-validation for lambda in systolic pressure")
 abline(v = cv_syst$lambda.min)
@@ -168,7 +170,7 @@ abline(v = cv_syst$lambda.min)
 
 And here is the CV plot to choose lambda for the difference model:
 
-```{r, echo = FALSE, out.width = '50%'}
+```{r, echo = FALSE, out.width = '50%', fig.align='center'}
 plot(cv_diff$lambda, cv_diff$cvm, ylab = "Mean standard error", xlab = "lambda",
      main = "Cross-validation for lambda in pressure difference")
 abline(v = cv_diff$lambda.min)
@@ -191,7 +193,7 @@ lars_diff =
 ```
 
 ### Results
-Here are the resulting coefficients from the two models:
+We only focus on the coefficients of the interaction terms. Here are the resulting coefficients combined from the two models. 
 
 ```{r collection, echo = FALSE}
 # data collection
@@ -202,6 +204,13 @@ lambda = cbind(lambda_syst, lambda_diff)
 rownames(lambda) = "lambda_min_mse"
 coef = rbind(coef, lambda)
 colnames(coef) = c("systolic", "difference")
-
-coef
+coef_int = as.matrix(coef)[c(2,12:21),]
+knitr::kable(coef_int, digits=3, caption = "Nutrition Influence on Blood Pressure Across Gender")%>%
+  kable_styling(full_width = F)
 ```
+
+Remember that gender = 0.5 representing male and -0.5 representing female. In our common sense, the propotion of men with hypertention are higher than that of women, which is also supported by our results: coefficients of gender in both model are negative.
+
+In the first model within systolic pressure as response, the variables with the greatest difference between men and women are sodium, alcohol, and caffeine. We can see that men's systolic pressure is affected by alcohol and sodium, while women's blood pressure is affected by caffeine.In the second model within difference between systolic and diastolic pressure as response, the variables with the greatest difference between men and women are sodium, alcohol, fat, water, and caffeine. We can see that men's systolic pressure is more affected by sodium, alcohol and fat, while women's blood pressure is affected by caffeine and water.
+
+To make a robust conclusion, we considered both models together. In conclusion, men's systolic pressure is more affected by sodium, alcohol, while women's blood pressure is affected by caffeine. This results may help people to get more ideas about how to prevent hypertension: men should be more careful about alcohol intaking and women should pay more attention to caffeine intaking.
