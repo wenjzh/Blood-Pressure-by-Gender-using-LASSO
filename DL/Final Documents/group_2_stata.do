@@ -1,16 +1,11 @@
 // Work with Demo dataset
 /// set up data
 import sasxport5 DEMO_I.XPT, clear
-keep seqn riagendr ridageyr indfmpir
+keep seqn riagendr //ridageyr indfmpir
 /// rename for ease
-rename riagendr gender2
-rename ridageyr age
-rename indfmpir pir
-/// label gender
-label define gender_name 1 "Male" 2 "Female"
-label values gender2 gender_name
-decode gender2, generate(gender)
-drop gender2
+rename riagendr gender
+/// get rid of missing values
+drop if gender == .
 //
 // *save as demo.dta*
 
@@ -18,15 +13,16 @@ drop gender2
 /// set up data
 import sasxport5 BPX_I.XPT, clear
 keep seqn bpxsy1 bpxdi1 bpxsy2 bpxdi2 bpxsy3 bpxdi3
+/// get rid of missing values
+generate missing = 0
+replace missing = 1 if bpxsy1 == . | bpxsy2 == . | bpxsy3 == . | bpxdi1 == . | bpxdi2 == . | bpxdi3 == .
+keep if missing == 0
+drop missing
 /// find average blood pressures for each respondent
 egen systolic = rowmean(bpxsy1 bpxsy2 bpxsy3)
 egen diastolic = rowmean(bpxdi1 bpxdi2 bpxdi3)
 keep seqn systolic diastolic
-/// get rid of missing values
-generate missing = 0
-replace missing = 1 if systolic == . | diastolic == .
-drop missing
-//
+
 // *save as blood_pressure.dta*
 
 // Work with Day 1 Data
@@ -82,50 +78,35 @@ drop _merge
 //
 /// get rid of missing values
 generate missing = 0
-replace missing = 1 if age == . | pir == .| systolic == . | diastolic == . | gender == "." | fat == . | sugar == . | protein == . | fiber == . | sodium == . | iron == . | alcohol ==  . | caff == . | water == .
+replace missing = 1 if systolic == . | diastolic == . | gender == . | fat == . | sugar == . | protein == . | fiber == . | sodium == . | iron == . | alcohol ==  . | caff == . | water == .
 keep if missing == 0
-//
+/// only keep if there are 2 days of data
+by seqn, sort: generate n = _N
+keep if n == 2
 /// have only one row of values for each respondent
-collapse (mean) age pir systolic diastolic fat sugar protein fiber sodium iron alcohol caff water, by(gender seqn)
-//
+collapse (mean) gender systolic diastolic fat sugar protein fiber sodium iron alcohol caff water, by(seqn)
 /// standardize
-foreach i in age pir systolic diastolic fat sugar protein fiber sodium iron alcohol caff water {
+foreach i in systolic diastolic fat sugar protein fiber sodium iron alcohol caff water {
 	egen `i'_mean = mean(`i')
 	egen `i'_std = sd(`i')
 	generate `i'_s = (`i'-`i'_mean)/`i'_std
 }
 //
 /// keep only important variables
-keep seqn age pir gender systolic_s diastolic_s fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s
+keep seqn gender systolic_s diastolic_s fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s
 generate diff = systolic_s - diastolic_s
 
 // *save as proj_data2.dta*
 
 
-// NOT USING THIS METHOD
-// lasso and then ols with interaction (use r(coef) and then r(table))
-/// set up gend as binary
-//encode gender, generate(gend)
-//
-/// SYSTOLIC: use lasso to find most important coeff and regress interaction
-//lasso linear systolic_s fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s 
-//lassocoef, display(coef, standardized)
-//regress systolic_s c.fat_s#gend c.sugar_s#gend c.fiber_s#gend c.iron_s#gend c.alcohol_s#gend c.caff_s#gend c.water_s#gend
-//
-/// DIFF: use lasso to find most important coeff and regress interaction
-//lasso linear diff fat_s sugar_s protein_s fiber_s sodium_s iron_s alcohol_s caff_s water_s 
-//lassocoef, display(coef, standardized)
-//regress diff c.sugar_s#gend c.protein_s#gend c.fiber_s#gend c.sodium_s#gend c.alcohol_s#gend c.caff_s#gend c.water_s#gend
-
-
 // Penalty Weighted LASSO (use r(coef))
 /// set up gend as continuous
 generate gend = 0
-replace gend = 0.5 if gender == "Male"
-replace gend = -0.5 if gender == "Female"
+replace gend = 0.5 if gender == 1
+replace gend = -0.5 if gender == 2
 //
-/// set up penalty weight matrix with gend weighted at 0
-mata: wt = (0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+/// set up penalty weight matrix with interaction at 1
+mata: wt = (0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1)
 mata: st_matrix("mweight", wt)
 //
 /// SYSTOLIC #1: lasso
@@ -150,7 +131,7 @@ lassocoef, display(coef, standardized)
 matrix diff2 = r(coef)
 
 // Put into excel
-putexcel set group_2.xlsx, sheet(Stata_sys) modify
+putexcel set group_2.xlsx, sheet(Stata_sys) replace
 putexcel B1 = "Sys #1"
 putexcel B2 = matrix(sys1)
 putexcel D1 = "Sys #2"
