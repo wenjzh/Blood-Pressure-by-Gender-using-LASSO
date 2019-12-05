@@ -1,6 +1,5 @@
 # STATS 506 Group Project F19
 
-<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
 
 - [STATS 506 Group Project F19](#stats-506-group-project-f19)
   - [Author: Group 2](#author-group-2)
@@ -46,10 +45,11 @@ Since our purpose is to find how gender effect the relationship between the nutr
 
 <!-- <img src="http://chart.googleapis.com/chart?cht=tx&chl= \underset{\beta}{\operatorname{minimize}} \quad \frac{1}{2} \frac{\operatorname{RSS}}{n}+\lambda \sum_{j=1}^{p} \frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}" style="border:none;"> -->
 
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default">
 $$
 \underset{\beta}{\operatorname{minimize}} \quad \frac{1}{2} \frac{\operatorname{RSS}}{n}+\lambda \sum_{j=1}^{p} \frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}
 $$
-\\(\underset{\beta}{\operatorname{minimize}} \quad \frac{1}{2} \frac{\operatorname{RSS}}{n}+\lambda \sum_{j=1}^{p} \frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}\\))
+</script>
 
 where $c_j$ is the penalty factor we used for each term
 
