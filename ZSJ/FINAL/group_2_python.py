@@ -9,8 +9,8 @@
 import numpy as np
 import sklearn
 import pandas as pd
-import glmnet_py
-from glmnet import glmnet
+# import glmnet_py
+import glmnet
 import scipy
 
 df_file = "group_2_df.csv"

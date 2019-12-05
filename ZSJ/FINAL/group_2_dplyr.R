@@ -113,7 +113,7 @@ df_scale = scale(df[,2:10])
 
 df = df %>%
   select(seqn, bpxsy_avg, bpxdiff_avg, gender) %>%
-  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = gender-1.5) %>%
+  transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = -(gender-1.5) ) %>%
   cbind(df_scale) %>%
   mutate(gender_alco = gender*alco,
          gender_caff = gender*caff,
@@ -132,28 +132,60 @@ df = df %>%
 library("glmnet")
 
 # for bpxsy as response 
+set.seed(1984)
+penalty.factor = append(rep(0,10),rep(1, 9))
 
-penalty.factor = append(0,rep(1, 18))
-
+# The precomputed lambda is set as 100 to get more accurate cross-validation result
 m1 = glmnet(x = as.matrix(df[,c(4:22)]), 
             y = as.matrix(df[,c(2)]), 
-            family="gaussian", alpha = 1, penalty.factor = penalty.factor)
-mod_cv1 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(2)]), 
+            family="gaussian", alpha = 1, penalty.factor = penalty.factor, nlambda = 100)
+
+# The cross-validation using 20 folded training-test set.
+mod_cv1 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(2)]), nfolds = 20, 
                      type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
-coef(m1, s=c(mod_cv1$lambda.min))
-
-mod_cv1$lambda.min
-m11 = lm(as.matrix(df[,c(2)])~as.matrix(df[,c(4:22)]))
 
 
+min_lambda1 = mod_cv1$lambda.min
 
-plot(m1)
+plot(mod_cv1$lambda, mod_cv1$cvm, ylab = "Mean standard error", xlab = "lambda",
+     main = "Cross-validation for lambda in systolic pressure")
+abline(v = mod_cv1$lambda.min)
+
+coef1 = coef(m1, s=c(mod_cv1$lambda.min))
+plot(m1, main = "LASSO for systolic blodd pressure")
+
+# for bpxdiff as response 
+set.seed(1984)
+# The precomputed lambda is set as 100 to get more accurate cross-validation result
+m2= glmnet(x = as.matrix(df[,c(4:22)]), 
+            y = as.matrix(df[,c(3)]), 
+            family="gaussian", alpha = 1, penalty.factor = penalty.factor, nlambda = 100)
+
+# The cross-validation using 20 folded training-test set.
+mod_cv2 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(3)]), nfolds = 20, 
+                     type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
+
+min_lambda2 = mod_cv2$lambda.min
+
+plot(mod_cv2$lambda, mod_cv2$cvm, ylab = "Mean standard error", xlab = "lambda",
+     main = "Cross-validation for lambda in pressure difference")
+abline(v = mod_cv2$lambda.min)
+
+coef2 = coef(m2, s=c(mod_cv2$lambda.min))
+plot(m2, main = "LASSO for blodd pressure difference")
+
+coef = cbind(coef1, coef2)
+lambda = cbind(min_lambda1, min_lambda2)
+rownames(lambda) = "lambda_min_mse"
+coef = rbind(coef, lambda)
+colnames(coef) = c("systolic", "difference")
 
 # using DL Data
 
-
-df = read.csv('../../DL/group_2_stata.csv')
-df = df  %>%
+# for bpxsy as response 
+set.seed(1949)
+df_L = read.csv('../../DL/final_stata_data.csv')
+df_L = df_L  %>%
   mutate(gend_alco = gend*alcohol_s,
          gend_caff = gend*caff_s,
          gend_fat = gend*fat_s,
@@ -164,12 +196,17 @@ df = df  %>%
          gend_sugr = gend*sugar_s,
          gend_water = water_s*gend)
 
-m1 = glmnet(x = as.matrix(df[,c(4:12,14:23)]), 
-            y = as.matrix(df[,c(2)]), 
+m3 = glmnet(x = as.matrix(df_L[,c(5:13, 15:24)]), 
+            y = as.matrix(df_L[,c(3)]), 
             family="gaussian", alpha = 1, penalty.factor = penalty.factor)
-mod_cv1 <- cv.glmnet(x=as.matrix(df[,c(4:12,14:23)]), y=as.matrix(df[,c(2)]), 
+mod_cv3 <- cv.glmnet(x=as.matrix(df_L[,c(5:13, 15:24)]), y=as.matrix(df_L[,c(3)]), 
                      type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
-coef(m1, s=c(mod_cv1$lambda.min))
 
-mod_cv1$lambda.min
-m11 = lm(as.matrix(df[,c(12)])~as.matrix(df[,c(2:11, 15:22)]))
+min_lambda3 = mod_cv3$lambda.min
+
+plot(mod_cv3$lambda, mod_cv3$cvm, ylab = "Mean standard error", xlab = "lambda",
+     main = "Cross-validation for lambda in pressure difference")
+abline(v = mod_cv3$lambda.min)
+
+coef3 = coef(m3, s=c(mod_cv3$lambda.min))
+plot(m3, main = "LASSO for blodd pressure difference")
