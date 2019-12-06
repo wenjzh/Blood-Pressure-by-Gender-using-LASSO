@@ -19,6 +19,12 @@ Sijun Zhang ([dplyr_glmnet](./ZSJ/FINAL/))
 
 Wenjing Zhou ([data.table_customized_cross-validation](./Wenjing/))
 
+## To Do
+
+Code review for styling purpose
+
+Customized Cross Validation function in data.table analysis
+
 ## Navigation
 
 ### Report
@@ -36,7 +42,11 @@ We are working on both the [issues](https://github.com/Randyzhang98/STATS506_Pro
 The final scripts path are linked in the **Author** part and you can find running guidence in each folder's readme.md.
 
 ## Overview
- We choose to investigate whether both genders will react the same under the the effect of consumption habits on blood pressure, a known symptom of different chronic diseases. Will the factors that are most important in determining blood pressure be different between males the females? We will show in the following analysis that there are certain foods that affect one gender more than the other, and that these foods change depending on the type of blood pressure being measured.
+ We choose to investigate whether both genders will react the same under the the effect of consumption habits on blood pressure, a known symptom of different chronic diseases. Will the factors that are most important in determining blood pressure be different between males the females? 
+
+>**Whether both genders will react the same under the the effect of consumption habits on blood pressure**
+ 
+ We will show in the following analysis that there are certain foods that affect one gender more than the other, and that these foods change depending on the type of blood pressure being measured.
 
 ## Method: LASSO with customized penalty.factor
 
