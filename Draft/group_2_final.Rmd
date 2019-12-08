@@ -28,7 +28,7 @@ The demographics dataset (DEMO_I.XPT) provides us with the **gender markers** fo
 
 The blood pressure dataset (BPX_I.XPT) gives 4 different readings of systolic and diastolic blood pressure, and we took an average of the first three for each type of blood pressure for each respondent since the 4th is mainly missing.
 
-We are going to have **response variables ‘systolic’**, which will give us the generally higher or lower blood pressure, and **‘difference’** (calculated as systolic – diastolic) which will give us situations when only systolic blood pressure increases.
+We are going to have **response variables ‘systolic’**, which will give us generally higher or lower blood pressure, and **‘difference’** (calculated as systolic – diastolic) which will give us situations when only systolic blood pressure increases.
 
 ### Total Nutrients
 
@@ -46,7 +46,7 @@ LASSO, least absolute shrinkage and selector operator, works by finding the coef
 $$
 \min _{\beta \in \mathbb{R}^{p}}\left\{\frac{1}{N}\|y-X \beta\|_{2}^{2}+\lambda\|\beta\|_{1}\right\}
 $$
-This equation **shrinks** all coefficients like in ridge regression but also sets coefficients below a constant to zero, effectively **selecting** variables that have more extreme coefficients.
+As a type of least squares regression with L1 penalty, this LASSO equation **shrinks** all coefficients like in ridge regression but also sets coefficients below a constant to zero, effectively **selecting** variables that have more extreme coefficients.
 
 The $\lambda$ in the penalty term effectively determines how extreme the model will shrink the coefficients, so finding the right $\lambda$ is important. Usually the $\lambda$ chosen is the one that minimizes the MSE from cross-validation.
 
@@ -54,7 +54,7 @@ The $\lambda$ in the penalty term effectively determines how extreme the model w
 
 Instead of using gender as a factor or binary variable, we will be converting gender into a continuous numerical variable by setting **‘male’ to 0.5** and **‘female’ to -0.5**. This way, the interaction coefficients can be interpreted as that variable being more important for men or women in determining blood pressure.
 
-We’re only interested in the **interaction between the predictor variables and gender**, so we will be putting penalties only on the interaction terms and not on the independent terms. The remaining interaction coefficients,then, will be the variables that may unequally affect the blood pressure depending on gender.
+We’re only interested in the **interaction between the predictor variables and gender**, so we will be putting penalties only on the interaction terms (penalty = 1) and not on the independent terms (penalty = 0). By creating a penalty weight matrix that 0's and 1's that correspond to the inputted predictor variables, we penalize only the interaction terms, leaving all the independent terms in the model. The remaining interaction coefficients,then, will be the variables that may unequally affect the blood pressure depending on gender.
 
 ## Languages/Tools
 
@@ -482,7 +482,7 @@ As the table above shows, we can infer that, compared to men's blood pressure di
 
 In the blood pressure difference results, we see that interaction term with water is on the same scale as the term with caffeine, which might imply a correlation between the water and caffeine variables.
 
-Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn't imply that women have a higher caffeine intake. The caffeine intake of women is actually lower than men's. The most reasonable interpretation of these results is that women's blood pressure is more sensitive to caffeine while men's is more sensitive to alcohol. Since blood pressure may influence one's judgment and endurance, the result may imply that women have a higher alcohol tolerance than men.
+Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn't imply that women have a higher caffeine intake. The caffeine intake of women is actually lower than men's. The most reasonable interpretation of these results is that women's blood pressure is more sensitive to caffeine while men's is more sensitive to alcohol.
 
 
 ```{r}
@@ -503,15 +503,27 @@ library(Statamarkdown)
 ## Set up data
 sys_table <- readr::read_csv("./DL_results/sys_table.csv")
 diff_table <- readr::read_csv("./DL_results/diff_table.csv")
+dt_df <- readr::read_csv("./DL_results/df_dt.csv")
 
 ```
 ### _Preparing the Data_
-First, we loaded all the 2015 NHANES datasets into Stata. Most of the datasets only needed changes to the labels, but the systolic and diastolic blood pressures needed to be averaged for each respondent. Here is some sample code from preparing the blood pressure dataset:
+First, we loaded all the 2015 NHANES datasets into Stata. Most of the datasets only needed changes to the labels, but the systolic and diastolic blood pressures needed to be averaged for each respondent. Here is the code :
 
 ```{stata, echo = TRUE, results = "hide"}
+// Work with Demo dataset
+/// set up data
+import sasxport5 DEMO_I.XPT, clear
+keep seqn riagendr //ridageyr indfmpir
+/// rename for ease
+rename riagendr gender
+/// get rid of missing values
+drop if gender == .
+//
+// *save as demo.dta*
+
 // Work with Blood Pressure dataset
 /// set up data
-import sasxport5 "../DATA/BPX_I.XPT", clear
+import sasxport5 BPX_I.XPT, clear
 keep seqn bpxsy1 bpxdi1 bpxsy2 bpxdi2 bpxsy3 bpxdi3
 /// get rid of missing values
 generate missing = 0
@@ -522,10 +534,74 @@ drop missing
 egen systolic = rowmean(bpxsy1 bpxsy2 bpxsy3)
 egen diastolic = rowmean(bpxdi1 bpxdi2 bpxdi3)
 keep seqn systolic diastolic
+
+// *save as blood_pressure.dta*
+
+// Work with Day 1 Data
+/// set up day 1 data
+import sasxport5 DR1TOT_I.XPT, clear
+keep seqn dr1ttfat dr1tsugr dr1tprot dr1tfibe dr1tsodi dr1tiron dr1talco dr1tcaff dr1_320z
+/// rename for ease
+rename dr1ttfat fat
+rename dr1tsugr sugar
+rename dr1tprot protein
+rename dr1tfibe fiber
+rename dr1tsodi sodium
+rename dr1tiron iron
+rename dr1talco alcohol
+rename dr1tcaff caff
+rename dr1_320z water
+/// create day 1 label
+generate day = 1
+//
+// *save as nutrient2.dta*
+
+
+// Work with Day 2 Data
+/// set up day 2 data
+import sasxport5 DR2TOT_I.XPT, clear
+keep seqn dr2ttfat dr2tsugr dr2tprot dr2tfibe dr2tsodi dr2tiron dr2talco dr2tcaff dr2_320z
+// rename for ease
+rename dr2ttfat fat
+rename dr2tsugr sugar
+rename dr2tprot protein
+rename dr2tfibe fiber
+rename dr2tsodi sodium
+rename dr2tiron iron
+rename dr2talco alcohol
+rename dr2tcaff caff
+rename dr2_320z water
+/// create day 2 label
+generate day = 2
+
 ```
 
 Once all the datasets were prepared, they were merged together by respondent, and any respondents with any missing values for our variables of interest were dropped.
 
+```{stata, echo = TRUE, results = "hide"}
+// Combine all datasets
+/// bind day 1 data
+append using nutrient2.dta
+/// merge demo data
+merge m:1 seqn using demo.dta
+keep if _merge == 3
+drop _merge
+/// merge blood pressure data
+merge m:1 seqn using blood_pressure.dta
+keep if _merge == 3
+drop _merge
+
+/// get rid of missing values
+generate missing = 0
+replace missing = 1 if systolic == . | diastolic == . | gender == . | fat == . | sugar == . | protein == . | fiber == . | sodium == . | iron == . | alcohol ==  . | caff == . | water == .
+keep if missing == 0
+/// only keep if there are 2 days of data
+by seqn, sort: generate n = _N
+keep if n == 2
+/// have only one row of values for each respondent
+collapse (mean) gender systolic diastolic fat sugar protein fiber sodium iron alcohol caff water, by(seqn)
+
+```
 
 ### _LASSO in Stata_
 Luckily, Stata has a base LASSO command that uses CV, so we only had to input the proper parameters.
@@ -533,6 +609,7 @@ Luckily, Stata has a base LASSO command that uses CV, so we only had to input th
 #### *Response and Predictor Variables*
 The easy parameters were the response variables: systolic blood pressure and the difference in blood pressures. The predictor variables, though, needed to be standardized before they could be put into the model. Here is the code to standardize by mean and standard deviation:
 ```{stata, echo = TRUE, results = "hide"}
+/// standardize
 foreach i in systolic diastolic fat sugar protein fiber sodium iron alcohol caff water {
 	egen `i'_mean = mean(`i')
 	egen `i'_std = sd(`i')
@@ -541,6 +618,13 @@ foreach i in systolic diastolic fat sugar protein fiber sodium iron alcohol caff
 ```
 
 Gender was turned into a continuous variable by setting 'male' to 0.5 and 'female' to -0.5. Using this method, we can interpret a negative coefficient as the variable being more important for women than for men and vice versa.
+
+```{stata, echo = TRUE, results = "hide"}
+/// set up gend as continuous
+generate gend = 0
+replace gend = 0.5 if gender == 1
+replace gend = -0.5 if gender == 2
+```
 
 #### *Penalty Weights*
 Since we're only interested in what interaction terms are selected, we only want to use LASSO on the interaction terms while keeping the independent terms. To achieve this in code, we fully penalized (set penalty weight = 1) the interaction terms (ex. c.alcohol#c.gender) while not penalizing (set penalty weight = 0) the independent terms (ex. alcohol and gender).
@@ -557,12 +641,31 @@ mata: wt = (0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1)
 The penalty weight of 1 is only for the interaction terms, allowing the independent terms to be included in the resulting model.
 
 #### *Modeling*
-Systolic blood pressure was modeled similar to what was shown above, and the difference was modeled in the way shown here:
+The systolic and difference are modeled in the way shown here:
 ```{stata, echo = TRUE, results = "hide"}
+lasso linear systolic gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend protein_s c.protein_s#c.gend fiber_s c.fiber_s#c.gend sodium_s c.sodium_s#c.gend iron_s c.iron_s#c.gend alcohol_s c.alcohol_s#c.gend caff_s c.caff_s#c.gend water_s c.water_s#c.gend, penaltywt(mweight)
+
 lasso linear diff gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend protein_s c.protein_s#c.gend fiber_s c.fiber_s#c.gend sodium_s c.sodium_s#c.gend iron_s c.iron_s#c.gend alcohol_s c.alcohol_s#c.gend caff_s c.caff_s#c.gend water_s c.water_s#c.gend, penaltywt(mweight)
 ```
 
 Using CV to choose the $\lambda$s results in slightly different $\lambda$s each time this model is run due to the nature of cross validation and the method of choosing the minimum. Keeping this in mind, we ran the models multiple times to see if the different lambdas provided dramatically different results. Since there were not dramatic differences, we continued with the analysis.
+
+Before running the CV option to find $\lambda$, we tried using the $\lambda$s from the R analyses to see if the same interaction terms remained.
+
+```{stata, echo = TRUE, results = "hide"}
+// data.table SYSTOLIC: lasso
+lasso linear systolic_s gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend protein_s c.protein_s#c.gend fiber_s c.fiber_s#c.gend sodium_s c.sodium_s#c.gend iron_s c.iron_s#c.gend alcohol_s c.alcohol_s#c.gend caff_s c.caff_s#c.gend water_s c.water_s#c.gend, penaltywt(mweight) lambda(0.07306032)
+
+/// dplyr SYSTOLIC: lasso
+lasso linear systolic_s gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend protein_s c.protein_s#c.gend fiber_s c.fiber_s#c.gend sodium_s c.sodium_s#c.gend iron_s c.iron_s#c.gend alcohol_s c.alcohol_s#c.gend caff_s c.caff_s#c.gend water_s c.water_s#c.gend, penaltywt(mweight) lambda(0.08027007)
+```
+
+Here are the results:
+```{r, echo = FALSE}
+knitr::kable(dt_df, caption = "Comparing Systolic Coefficients", digits = 2)
+```
+
+All the interaction coefficients were set to 0 in both cases, which is not consistent with the R analyses. These results suggest that either the final data that the models were performed on were significantly different or the way R and Stata do LASSO regression is different. Instead of using the same $\lambda$, we decided to allow CV to choose $\lambda$.
 
 Here is the CV plot to choose $\lambda$ for the systolic model:
 
@@ -580,8 +683,8 @@ knitr::include_graphics("./DL_results/diff_cvplot.png")
 Here are the resulting coefficients from the two models:
 
 ```{r, echo = FALSE}
-knitr::kable(sys_table, caption = "Systolic LASSO Coefficients")
-knitr::kable(diff_table, caption = "Difference LASSO Coefficients")
+knitr::kable(sys_table, caption = "Systolic LASSO Coefficients", digits = 2)
+knitr::kable(diff_table, caption = "Difference LASSO Coefficients", digits = 2)
 ```
 
 Since we're only interested in the interaction coefficients, here are the tables only including the interaction coefficients:
@@ -604,13 +707,17 @@ knitr::kable(diff_interact, caption = "Difference Gender-Interaction Coefficient
 
 Difference between the blood pressures is a more accurate measure of systolic blood pressure since the only way for there to be a greater difference is if only systolic blood pressure rises without diastolic blood pressure rising. Now the variables with the greatest difference between genders are caffeine, water, alcohol, fat, and sugar. Women's blood pressure is slighly more affected by sugar but more significantly affected by caffeine and water; while men's blood pressure is more significantly affected by alcohol and fat.
 
-Between the two models, the variables with the greatest difference by gender are alcohol and caffeine, though we can't say if the resulting coefficients are comparable between the models. Women's blood pressure seems to be more affected by caffeine; and men's blood pressure more affected by alcohol. Interestingly enough, both are non-essential liquids that are gender-coded: men are more socially pressured to drink alcohol while women are more socially pressured to drink caffeine. These results may simply be due to these social pressures affecting the respondents' bodies over time, so more surveys need to be done where these liquids are equalized between the genders over time.
+# **Discussion and Conclusion**
+
+## Gender and Blood Pressure
+
+Overall, both the glmnet function in R and the LASSO command in Stata produced similar results: that women's blood pressure increase is more effected by caffeine, and men's blood pressure increase is more effected by alcohol. Between the two languages, the scale of coefficients and $\lambda$ are not the same, even if they share the same signs and non-zero properties.
+
+Between all the models, the variables with the greatest difference by gender are alcohol and caffeine, though we can't say if the resulting coefficients are comparable between the models. Women's blood pressure seems to be more affected by caffeine; and men's blood pressure more affected by alcohol. Interestingly enough, both are non-essential liquids that are gender-coded: men are more socially pressured to drink alcohol while women are more socially pressured to drink caffeine. These results may simply be due to these social pressures affecting the respondents' bodies over time. Since blood pressure may influence one's judgment and endurance, these results may also imply that women have a higher alcohol tolerance than men. Either way, more surveys need to be done where these liquids are equalized between the genders over time.
 
 This isn't to say that the other variables are not significant in determining blood pressure, only that the other variables affect blood pressure to a more equivalent degree between the two genders. Again, LASSO shrinks all coefficients so the remaining variables are the ones that have the most extreme coefficients. Our results, then, only display the variables that have the greatest difference in effect on blood pressure between the genders.
 
-# **Conclusion and Discussion**
-
-Overall, both glmnet function in R and LASSO command in Stata produced similar results: that women's blood pressure increase is more effected by caffeine, and men's blood pressure increase is more effected by alcohol. Between the two languages, the scale of coefficients and $\lambda$ are not the same, even if they share the same signs and non-zero properties.
+## R's _glmnet_ Function and Stata's _lasso_ Command
 
 In order to compare contrast the analyses, we will use the $\lambda_{min}$ from Stata's cross-validation and the Stata ending dataset for glmnet modeling.
 
