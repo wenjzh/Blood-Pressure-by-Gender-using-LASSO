@@ -503,7 +503,7 @@ library(Statamarkdown)
 ## Set up data
 sys_table <- readr::read_csv("./DL_results/sys_table.csv")
 diff_table <- readr::read_csv("./DL_results/diff_table.csv")
-dt_df <- readr::read_csv("./DL_results/df_dt.csv")
+dt_df <- readr::read_csv("./DL_results/dt_df.csv")
 
 ```
 ### _Preparing the Data_
@@ -662,7 +662,7 @@ lasso linear systolic_s gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend prote
 
 Here are the results:
 ```{r, echo = FALSE}
-knitr::kable(dt_df, caption = "Comparing Systolic Coefficients", digits = 2)
+knitr::kable(dt_df, caption = "Comparing Systolic Coefficients", digits = 5)
 ```
 
 All the interaction coefficients were set to 0 in both cases, which is not consistent with the R analyses. These results suggest that either the final data that the models were performed on were significantly different or the way R and Stata do LASSO regression is different. Instead of using the same $\lambda$, we decided to allow CV to choose $\lambda$.
@@ -683,8 +683,8 @@ knitr::include_graphics("./DL_results/diff_cvplot.png")
 Here are the resulting coefficients from the two models:
 
 ```{r, echo = FALSE}
-knitr::kable(sys_table, caption = "Systolic LASSO Coefficients", digits = 2)
-knitr::kable(diff_table, caption = "Difference LASSO Coefficients", digits = 2)
+knitr::kable(sys_table, caption = "Systolic LASSO Coefficients", digits = 5)
+knitr::kable(diff_table, caption = "Difference LASSO Coefficients", digits = 5)
 ```
 
 Since we're only interested in the interaction coefficients, here are the tables only including the interaction coefficients:
