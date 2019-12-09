@@ -13,6 +13,8 @@ Yet, past research is heavily skewed towards studying the male body. Maya Dusenb
 
 The combination of rising chronic diseases and lack of diverse gender representation in research provides a unique perspective on the NHANES data. We chose to investigate the effect of consumption habits on blood pressure, a known symptom of different chronic diseases, without the assumption that all genders would react the same. Will the factors that are most important in determining blood pressure be different between males the females? We will show in the following analysis that there are certain foods that affect one gender more than the other, and that these foods change depending on the type of blood pressure being measured. (The study only provided answers of ‘male’ and ‘female’ as identifiable genders, so those will be the only ones in this analysis. Also sex and gender will be used interchangeably in this context.)
 
+>Whether both genders will react the same under the the effect of consumption habits on blood pressure?
+
 
 # **Data**
 
