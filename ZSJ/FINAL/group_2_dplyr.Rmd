@@ -24,7 +24,7 @@ library(SASxport)
 
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # read in the  data: -----------------------------------------------------------
-## This data will be used in the question. 
+## This data will be used in the question.
 url_base <- 'https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/'
 
 demo_file <- '../../DATA/DEMO_I.XPT'
@@ -71,27 +71,29 @@ if ( !file.exists(bpx_file) ) {
 
 Then we select only the responents with both two day data collected with no missing value and then take average of them as the average nutrition intake.
 
-Meanwhile, we also standarized the predictors and then merge the data together. We take the systolic and diastolic blood pressures as the responses that are needed to be averaged for each respondent. 
+Meanwhile, we also standarized the predictors and then merge the data together. We take the systolic and diastolic blood pressures as the responses that are needed to be averaged for each respondent.
 
-The gender variable are also assigned to 0.5(male) and -0.5(female) to make the expectation of them equal to zero. 
+The gender variable are also assigned to 0.5(male) and -0.5(female) to make the expectation of them equal to zero.
 
 ```{r}
+# transform all the input values to numeric
 dr1 = dr1 %>%
   transmute(seqn = seqn, alco = as.numeric(dr1talco),
             water = as.numeric(dr1.320z), caff = as.numeric(dr1tcaff),
-            sodi = as.numeric(dr1tsodi), fat = as.numeric(dr1ttfat), 
+            sodi = as.numeric(dr1tsodi), fat = as.numeric(dr1ttfat),
             sugr = as.numeric(dr1tsugr), iron = as.numeric(dr1tiron),
             fibe = as.numeric(dr1tfibe), prot = as.numeric(dr1tprot) ) %>%
   gather(key = "meas", value = "day1", -seqn )
 
 dr2 = dr2 %>%
   transmute(seqn = seqn, alco = as.numeric(dr2talco),
-            water = as.numeric(dr2.320z), caff = as.numeric(dr2tcaff), 
-            sodi = as.numeric(dr2tsodi), fat = as.numeric(dr2ttfat), 
+            water = as.numeric(dr2.320z), caff = as.numeric(dr2tcaff),
+            sodi = as.numeric(dr2tsodi), fat = as.numeric(dr2ttfat),
             sugr = as.numeric(dr2tsugr), iron = as.numeric(dr2tiron),
             fibe = as.numeric(dr2tfibe), prot = as.numeric(dr2tprot) ) %>%
   gather(key = "meas", value = "day2", -seqn )
 
+# collapse two day data and take the mean of tot nutrient intake.
 dr = dr1 %>%
   left_join(dr2, by = c('seqn', 'meas'))  %>%
   gather(key = "svy_day", value = "value", day1:day2) %>%
@@ -102,8 +104,8 @@ dr = dr1 %>%
             iron = mean(iron), prot = mean(prot),
             sodi = mean(sodi), sugr = mean(sugr), water = mean(water))
 
+# join the data into a whole data set
 demo = demo %>%
-  # transmute(seqn = seqn, age = ridageyr, pir = indfmpir, gender = riagendr)
   transmute(seqn = seqn, gender = riagendr)
 
 bpx = bpx %>%
@@ -122,6 +124,7 @@ df = bpx_dr %>%
 # standardizing process
 df_scale = scale(df[,2:10])
 
+# pre-calculate the interaction term
 df = df %>%
   select(seqn, bpxsy_avg, bpxdiff_avg, gender) %>%
   transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = -(gender-1.5)) %>%
@@ -147,7 +150,7 @@ write.csv(df, file = "group_2_df.csv", row.names = FALSE)
 
 ### Penalty.factor
 
-Since our purpose is to find how gender effect the relationship between the nutrition intake and the blood pressure measurement, we only penalize the interaction terms by setting the penalty.factor of the interaction terms with a same positive value and let other terms' zero. The explict form for LASSO minizing goal is shaped to 
+Since our purpose is to find how gender effect the relationship between the nutrition intake and the blood pressure measurement, we only penalize the interaction terms by setting the penalty.factor of the interaction terms with a same positive value and let other terms' zero. The explict form for LASSO minizing goal is shaped to
 
 $$
 \underset{\beta}{\operatorname{minimize}} \quad \frac{1}{2} \frac{\operatorname{RSS}}{n}+\lambda \sum_{j=1}^{p} \frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}
@@ -160,18 +163,18 @@ library("glmnet")
 ```
 
 
-### Cross-validation 
+### Cross-validation
 
 Before we fit the LASSO model for each response, we should first obtain appropriate $\lambda$ to control the L1 punishment on the interaction terms.
 
 ```{r}
 library("glmnet")
-# for bpxsy as response 
+# for bpxsy as response
 set.seed(1984)
 penalty.factor = append(rep(0,10),rep(1, 9))
 
 # The cross-validation using 20 folded training-test set.
-mod_cv1 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(2)]), nfolds = 20, 
+mod_cv1 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(2)]), nfolds = 20,
                      type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
 
 
@@ -181,11 +184,11 @@ plot(mod_cv1$lambda, mod_cv1$cvm, ylab = "Mean standard error", xlab = "lambda",
      main = "Cross-validation for lambda in systolic pressure")
 abline(v = mod_cv1$lambda.min)
 
-# for bpxdiff as response 
+# for bpxdiff as response
 set.seed(1984)
 
 # The cross-validation using 20 folded training-test set.
-mod_cv2 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(3)]), nfolds = 20, 
+mod_cv2 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(3)]), nfolds = 20,
                      type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
 
 min_lambda2 = mod_cv2$lambda.min
@@ -201,11 +204,11 @@ As we can find in the figures, as the curve of MSE versus $\lambda$ is not conve
 ### LASSO Modeling
 
 ```{r}
-m1 = glmnet(x = as.matrix(df[,c(4:22)]), 
+m1 = glmnet(x = as.matrix(df[,c(4:22)]),
             y = as.matrix(df[,c(2)]), lambda = min_lambda1,
             family="gaussian", alpha = 1, penalty.factor = penalty.factor, nlambda = 100)
 
-m2= glmnet(x = as.matrix(df[,c(4:22)]), 
+m2= glmnet(x = as.matrix(df[,c(4:22)]),
             y = as.matrix(df[,c(3)]), lambda = min_lambda2,
             family="gaussian", alpha = 1, penalty.factor = penalty.factor, nlambda = 100)
 
@@ -228,19 +231,19 @@ As we are only interested on the interaction terms with non-zero coefficients. T
 For systolic pressure:
 
 ```{r echo=FALSE}
-coef[c(12,13,18),1] 
+coef[c(12,13,18),1]
 ```
 
-From the result, we can obtain that comparing to men, women's systolic blood pressure is more likely to be lifted by the increasement of caffeine intaking. However, the increasement of sodium and alcohol intaking will affect more on men's systolic blood pressure.  
+From the result, we can obtain that comparing to men, women's systolic blood pressure is more likely to be lifted by the increasement of caffeine intaking. However, the increasement of sodium and alcohol intaking will affect more on men's systolic blood pressure.
 
 For blood pressure difference
 ```{r echo=FALSE}
-coef[c(12,13,14,18,20),2] 
+coef[c(12,13,14,18,20),2]
 ```
 
-As the above table shows, we can obtain that comparing to men, women's blood pressure differnece is more likely to be lifted by the increasement of caffeine and water intaking. However, the increasement of sodium, fat and alcohol intaking will affect more on men's systolic blood pressure.  
+As the above table shows, we can obtain that comparing to men, women's blood pressure differnece is more likely to be lifted by the increasement of caffeine and water intaking. However, the increasement of sodium, fat and alcohol intaking will affect more on men's systolic blood pressure.
 
-In the blood pressure difference result, we can find the interaction term with water is as large as the caffeine term, which might imply that the correlation between the water and caffeine variable. 
+In the blood pressure difference result, we can find the interaction term with water is as large as the caffeine term, which might imply that the correlation between the water and caffeine variable.
 
 Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn't imply that the women has a high intake of caffine. Indeed, the caffeine intake of women is less than men (0.5(male), -0.5(female)). The reasonable interpretation of this result is that women's blood pressure is more sensitive to the caffeine and men's is more sensitive to the alcohol. As the blood pressure may influnce the one's judgement and endurance, the result may imply that women have a better drinking capacity than men.
 

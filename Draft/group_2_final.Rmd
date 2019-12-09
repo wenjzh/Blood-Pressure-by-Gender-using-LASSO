@@ -320,6 +320,7 @@ We also standarized the predictors and merged the data together. Since there are
 The gender variable was converted from a factor variable into a continuous variable by assigning to 0.5 to male and -0.5 to female, assuring that the expectation of this variable will be zero.
 
 ```{r}
+# transform all the input values to numeric
 dr1 = dr1 %>%
   transmute(seqn = seqn, alco = as.numeric(dr1talco),
             water = as.numeric(dr1.320z), caff = as.numeric(dr1tcaff),
@@ -336,6 +337,7 @@ dr2 = dr2 %>%
             fibe = as.numeric(dr2tfibe), prot = as.numeric(dr2tprot) ) %>%
   gather(key = "meas", value = "day2", -seqn )
 
+# collapse two day data and take the mean of tot nutrient intake.
 dr = dr1 %>%
   left_join(dr2, by = c('seqn', 'meas'))  %>%
   gather(key = "svy_day", value = "value", day1:day2) %>%
@@ -346,8 +348,8 @@ dr = dr1 %>%
             iron = mean(iron), prot = mean(prot),
             sodi = mean(sodi), sugr = mean(sugr), water = mean(water))
 
+# join the data into a whole data set
 demo = demo %>%
-  # transmute(seqn = seqn, age = ridageyr, pir = indfmpir, gender = riagendr)
   transmute(seqn = seqn, gender = riagendr)
 
 bpx = bpx %>%
@@ -366,6 +368,7 @@ df = bpx_dr %>%
 # standardizing process
 df_scale = scale(df[,2:10])
 
+# pre-calculate the interaction term
 df = df %>%
   select(seqn, bpxsy_avg, bpxdiff_avg, gender) %>%
   transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = -(gender-1.5)) %>%

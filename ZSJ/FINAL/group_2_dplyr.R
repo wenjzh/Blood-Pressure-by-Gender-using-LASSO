@@ -3,7 +3,7 @@
 #
 # This script contains functions for interpreting the 2015-2016 NHANES
 #
-# Author: Sijun Zhang (randyz@umich.edu) (umid:889934761) 
+# Author: Sijun Zhang (randyz@umich.edu) (umid:889934761)
 # Date: Dec 4, 2019
 #80: ---------------------------------------------------------------------------
 library(tidyverse)
@@ -11,7 +11,7 @@ library(Hmisc)
 library(SASxport)
 
 # read in the  data: -----------------------------------------------------------
-## This data will be used in the question. 
+## This data will be used in the question.
 url_base <- 'https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/'
 
 demo_file <- '../../DATA/DEMO_I.XPT'
@@ -50,22 +50,24 @@ if ( !file.exists(bpx_file) ) {
   bpx <- sasxport.get(bpx_file)
 }
 
+# numeric all the input value
 dr1 = dr1 %>%
   transmute(seqn = seqn, alco = as.numeric(dr1talco),
             water = as.numeric(dr1.320z), caff = as.numeric(dr1tcaff),
-            sodi = as.numeric(dr1tsodi), fat = as.numeric(dr1ttfat), 
+            sodi = as.numeric(dr1tsodi), fat = as.numeric(dr1ttfat),
             sugr = as.numeric(dr1tsugr), iron = as.numeric(dr1tiron),
             fibe = as.numeric(dr1tfibe), prot = as.numeric(dr1tprot) ) %>%
   gather(key = "meas", value = "day1", -seqn )
 
 dr2 = dr2 %>%
   transmute(seqn = seqn, alco = as.numeric(dr2talco),
-            water = as.numeric(dr2.320z), caff = as.numeric(dr2tcaff), 
-            sodi = as.numeric(dr2tsodi), fat = as.numeric(dr2ttfat), 
+            water = as.numeric(dr2.320z), caff = as.numeric(dr2tcaff),
+            sodi = as.numeric(dr2tsodi), fat = as.numeric(dr2ttfat),
             sugr = as.numeric(dr2tsugr), iron = as.numeric(dr2tiron),
             fibe = as.numeric(dr2tfibe), prot = as.numeric(dr2tprot) ) %>%
   gather(key = "meas", value = "day2", -seqn )
 
+# collapse two day data and take the mean of tot nutrient intake.
 dr = dr1 %>%
   left_join(dr2, by = c('seqn', 'meas'))  %>%
   gather(key = "svy_day", value = "value", day1:day2) %>%
@@ -76,8 +78,8 @@ dr = dr1 %>%
             iron = mean(iron), prot = mean(prot),
             sodi = mean(sodi), sugr = mean(sugr), water = mean(water))
 
+# join the data into a whole data set
 demo = demo %>%
-  # transmute(seqn = seqn, age = ridageyr, pir = indfmpir, gender = riagendr)
   transmute(seqn = seqn, gender = riagendr)
 
 bpx = bpx %>%
@@ -106,11 +108,12 @@ my_scale = function(x) {
     spread(key = "meas", value = "value") %>%
     select(-id)
   return(re)
-} 
+}
 
 # df_scale = scale(df[,3:15])
 df_scale = scale(df[,2:10])
 
+# pre-calculate the interaction term
 df = df %>%
   select(seqn, bpxsy_avg, bpxdiff_avg, gender) %>%
   transmute(seqn, bpxsy_avg, bpxdiff_avg, gender = -(gender-1.5) ) %>%
@@ -125,23 +128,23 @@ df = df %>%
          gender_sugr = gender*sugr,
          gender_water = water*gender)
 
-# -0.5 represents male and 0.5 represents female 
+# -0.5 represents male and 0.5 represents female
 
 # write.csv(df, file = "df.csv")
 
 library("glmnet")
 
-# for bpxsy as response 
+# for bpxsy as response
 set.seed(1984)
 penalty.factor = append(rep(0,10),rep(1, 9))
 
 # The precomputed lambda is set as 100 to get more accurate cross-validation result
-m1 = glmnet(x = as.matrix(df[,c(4:22)]), 
-            y = as.matrix(df[,c(2)]), 
+m1 = glmnet(x = as.matrix(df[,c(4:22)]),
+            y = as.matrix(df[,c(2)]),
             family="gaussian", alpha = 1, penalty.factor = penalty.factor, nlambda = 100)
 
 # The cross-validation using 20 folded training-test set.
-mod_cv1 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(2)]), nfolds = 20, 
+mod_cv1 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(2)]), nfolds = 20,
                      type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
 
 
@@ -154,15 +157,15 @@ abline(v = mod_cv1$lambda.min)
 coef1 = coef(m1, s=c(mod_cv1$lambda.min))
 plot(m1, main = "LASSO for systolic blodd pressure")
 
-# for bpxdiff as response 
+# for bpxdiff as response
 set.seed(1984)
 # The precomputed lambda is set as 100 to get more accurate cross-validation result
-m2= glmnet(x = as.matrix(df[,c(4:22)]), 
-            y = as.matrix(df[,c(3)]), 
+m2= glmnet(x = as.matrix(df[,c(4:22)]),
+            y = as.matrix(df[,c(3)]),
             family="gaussian", alpha = 1, penalty.factor = penalty.factor, nlambda = 100)
 
 # The cross-validation using 20 folded training-test set.
-mod_cv2 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(3)]), nfolds = 20, 
+mod_cv2 <- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(3)]), nfolds = 20,
                      type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
 
 min_lambda2 = mod_cv2$lambda.min
@@ -182,7 +185,7 @@ colnames(coef) = c("systolic", "difference")
 
 # using DL Data
 
-# for bpxsy as response 
+# for bpxsy as response
 set.seed(1949)
 df_L = read.csv('../../DL/final_stata_data.csv')
 df_L = df_L  %>%
@@ -196,17 +199,24 @@ df_L = df_L  %>%
          gend_sugr = gend*sugar_s,
          gend_water = water_s*gend)
 
-m3 = glmnet(x = as.matrix(df_L[,c(5:13, 15:24)]), 
-            y = as.matrix(df_L[,c(3)]), 
+min_lambda3 = 0.0053525
+# for bpxsy as response
+m3 = glmnet(x = as.matrix(df_L[,c(5:13, 15:24)]),
+            y = as.matrix(df_L[,c(3)]), lambda = min_lambda3,
             family="gaussian", alpha = 1, penalty.factor = penalty.factor)
-mod_cv3 <- cv.glmnet(x=as.matrix(df_L[,c(5:13, 15:24)]), y=as.matrix(df_L[,c(3)]), 
-                     type.measure = "mse", family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
 
-min_lambda3 = mod_cv3$lambda.min
+min_lambda4 = 0.0045235
+# for bpxsy as response
+m4 = glmnet(x = as.matrix(df_L[,c(5:13, 15:24)]),
+            y = as.matrix(df_L[,c(14)]), lambda = min_lambda4,
+            family="gaussian", alpha = 1, penalty.factor = penalty.factor)
 
-plot(mod_cv3$lambda, mod_cv3$cvm, ylab = "Mean standard error", xlab = "lambda",
-     main = "Cross-validation for lambda in pressure difference")
-abline(v = mod_cv3$lambda.min)
+coef3 = coef(m3)
+coef4 = coef(m4)
+coef = cbind(coef3, coef4)
+lambda = cbind(min_lambda3, min_lambda4)
+rownames(lambda) = "lambda_min_mse"
+coef = rbind(coef, lambda)
+colnames(coef) = c("systolic", "difference")
 
-coef3 = coef(m3, s=c(mod_cv3$lambda.min))
-plot(m3, main = "LASSO for blodd pressure difference")
+coef
