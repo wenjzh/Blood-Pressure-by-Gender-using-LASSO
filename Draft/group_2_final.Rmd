@@ -13,7 +13,7 @@ Yet, past research is heavily skewed towards studying the male body. Maya Dusenb
 
 The combination of rising chronic diseases and lack of diverse gender representation in research provides a unique perspective on the NHANES data. We chose to investigate the effect of consumption habits on blood pressure, a known symptom of different chronic diseases, without the assumption that all genders would react the same. Will the factors that are most important in determining blood pressure be different between males the females? We will show in the following analysis that there are certain foods that affect one gender more than the other, and that these foods change depending on the type of blood pressure being measured. (The study only provided answers of ‘male’ and ‘female’ as identifiable genders, so those will be the only ones in this analysis. Also sex and gender will be used interchangeably in this context.)
 
->Whether both genders will react the same under the the effect of consumption habits on blood pressure?
+>Which predictor variables for blood pressure differ the greatest between males and females?
 
 
 # **Data**
@@ -49,6 +49,8 @@ $$
 \min _{\beta \in \mathbb{R}^{p}}\left\{\frac{1}{N}\|y-X \beta\|_{2}^{2}+\lambda\|\beta\|_{1}\right\}
 $$
 As a type of least squares regression with L1 penalty, this LASSO equation **shrinks** all coefficients like in ridge regression but also sets coefficients below a constant to zero, effectively **selecting** variables that have more extreme coefficients.
+
+Due to this shrinking and selecting method, standardizing all predictor variables before inputting them into the LASSO model is crucial, since these terms would be unfairly shrunk if left as is. The most common method for this is to subtract each value by the mean and divide by the standard deviation, which we utilized in our analyses.
 
 The $\lambda$ in the penalty term effectively determines how extreme the model will shrink the coefficients, so finding the right $\lambda$ is important. Usually the $\lambda$ chosen is the one that minimizes the MSE from cross-validation.
 
@@ -167,7 +169,7 @@ The response variables are systolic blood pressure and the difference in blood p
 mydata[,6:14] <- lapply(mydata[,6:14], function(x) c(scale(x)))
 
 # Change gender 1/2 to -0.5/0.5
-mydata = mydata[, gender := ifelse(gender==1, -0.5, 0.5)]
+mydata = mydata[, gender := ifelse(gender==1, 0.5, -0.5)]
 ```
 
 Gender was turned from 1 for 'male' and 2 for 'female' into 0.5 for 'male' and -0.5 for 'female', which makes interpretation of the coefficients of the interaction terms more meaningful.
@@ -249,11 +251,14 @@ coef2 = coef(lars_diff)
 coef = cbind(coef1, coef2)
 lambda = cbind(lambda_syst, lambda_diff)
 rownames(lambda) = "lambda_min_mse"
-coef = rbind(coef, lambda)
+coef = as.data.frame(as.matrix(rbind(coef, lambda)))
 colnames(coef) = c("systolic", "difference")
 
-coef
+knitr::kable(coef, caption = "LASSO Coefficients for Systolic and Difference", digits = 5)
 ```
+
+Women's systolic blood pressure is more effected by caffeine, while men's systolic blood pressure is more effected by sodium. Women's difference in blood pressure is more effected by water and caffeine, while men's difference is more effected by alcohol, fat, and sodium.
+
 
 ## R using dplyr and glmnet
 
@@ -460,10 +465,10 @@ coef2 = coef(m2)
 coef = cbind(coef1, coef2)
 lambda = cbind(min_lambda1, min_lambda2)
 rownames(lambda) = "lambda_min_mse"
-coef = rbind(coef, lambda)
+coef = as.data.frame(as.matrix(rbind(coef, lambda)))
 colnames(coef) = c("systolic", "difference")
 
-coef
+knitr::kable(coef, caption = "LASSO Coefficients for Systolic and Difference", digits = 5)
 ```
 
 #### *Result*
@@ -697,7 +702,7 @@ Since we're only interested in the interaction coefficients, here are the tables
 sys_interact <- sys_table %>%
   filter(grepl('#', Variables)) %>%
   arrange(Coefficients)
-knitr::kable(sys_interact, caption = "Systolic Gender-Interaction Coefficients")
+knitr::kable(sys_interact, caption = "Systolic Gender-Interaction Coefficients", digits = 5)
 ```
 
 We are using systolic blood pressure as a measure of both systolic and diastolic blood pressure. The variables with the greatest difference between men and women are sodium, alcohol, and caffeine. So, women's blood pressure is slightly more affected by caffeine; while men's blood pressure is more significantly affected by sodium and alcohol.
@@ -707,7 +712,7 @@ We are using systolic blood pressure as a measure of both systolic and diastolic
 diff_interact <- diff_table %>%
   filter(grepl('#', Variables)) %>%
   arrange(Coefficients)
-knitr::kable(diff_interact, caption = "Difference Gender-Interaction Coefficients")
+knitr::kable(diff_interact, caption = "Difference Gender-Interaction Coefficients", digits = 5)
 ```
 
 Difference between the blood pressures is a more accurate measure of systolic blood pressure since the only way for there to be a greater difference is if only systolic blood pressure rises without diastolic blood pressure rising. Now the variables with the greatest difference between genders are caffeine, water, alcohol, fat, and sugar. Women's blood pressure is slighly more affected by sugar but more significantly affected by caffeine and water; while men's blood pressure is more significantly affected by alcohol and fat.
@@ -758,10 +763,10 @@ coef4 = coef(m4)
 coef = cbind(coef3, coef4)
 lambda = cbind(min_lambda3, min_lambda4)
 rownames(lambda) = "lambda_min_mse"
-coef = rbind(coef, lambda)
+coef = as.data.frame(as.matrix(rbind(coef, lambda)))
 colnames(coef) = c("systolic", "difference")
 
-coef
+knitr:: kable(coef, caption = "LASSO Coefficients for Systolic and Difference", digits = 5)
 
 ```
 
@@ -781,4 +786,4 @@ Updating Gender Inclusivity: https://www.heart.org/en/health-topics/heart-attack
 
 Blood Pressure and Chronic Disease: https://www.mayoclinic.org/diseases-conditions/high-blood-pressure/in-depth/blood-pressure/art-20050982 and https://www.mayoclinic.org/diseases-conditions/high-blood-pressure/symptoms-causes/syc-20373410
 
-LASSO: Faraway, Julian James. Linear Models with R. CRC Press LLC, 2009.
+LASSO: Casella, George, and Roger L. Berger. _Statistical Inference_. Duxbury, 2002.

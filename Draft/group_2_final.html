@@ -377,7 +377,7 @@ summary {
 <p>Yet, past research is heavily skewed towards studying the male body. Maya Dusenbery discusses in her book <em>Doing Harm</em> how women are often disadvantaged by data that is mainly collected from men. She argues that many of the conclusions about common symptoms and reactions did not posit the possibility of important difference among genders and sexes, and assumed that the male-dominated model could represent all. While researchers are updating standards to provide more inclusive advice, we still implicitly accept that assumption in most medical situations.</p>
 <p>The combination of rising chronic diseases and lack of diverse gender representation in research provides a unique perspective on the NHANES data. We chose to investigate the effect of consumption habits on blood pressure, a known symptom of different chronic diseases, without the assumption that all genders would react the same. Will the factors that are most important in determining blood pressure be different between males the females? We will show in the following analysis that there are certain foods that affect one gender more than the other, and that these foods change depending on the type of blood pressure being measured. (The study only provided answers of ‘male’ and ‘female’ as identifiable genders, so those will be the only ones in this analysis. Also sex and gender will be used interchangeably in this context.)</p>
 <blockquote>
-<p>Whether both genders will react the same under the the effect of consumption habits on blood pressure?</p>
+<p>Which predictor variables for blood pressure differ the greatest between males and females?</p>
 </blockquote>
 </div>
 <div id="data" class="section level1">
@@ -410,6 +410,7 @@ summary {
 <p><span class="math display">\[
 \min _{\beta \in \mathbb{R}^{p}}\left\{\frac{1}{N}\|y-X \beta\|_{2}^{2}+\lambda\|\beta\|_{1}\right\}
 \]</span> As a type of least squares regression with L1 penalty, this LASSO equation <strong>shrinks</strong> all coefficients like in ridge regression but also sets coefficients below a constant to zero, effectively <strong>selecting</strong> variables that have more extreme coefficients.</p>
+<p>Due to this shrinking and selecting method, standardizing all predictor variables before inputting them into the LASSO model is crucial, since these terms would be unfairly shrunk if left as is. The most common method for this is to subtract each value by the mean and divide by the standard deviation, which we utilized in our analyses.</p>
 <p>The <span class="math inline">\(\lambda\)</span> in the penalty term effectively determines how extreme the model will shrink the coefficients, so finding the right <span class="math inline">\(\lambda\)</span> is important. Usually the <span class="math inline">\(\lambda\)</span> chosen is the one that minimizes the MSE from cross-validation.</p>
 </div>
 <div id="interaction-with-gender" class="section level2">
@@ -441,14 +442,14 @@ dr2 = dr2[,.(seqn, dr2talco,dr2.320z,dr2tcaff,dr2tsodi,
              dr2ttfat,dr2tsugr,dr2tiron,dr2tfibe,dr2tprot)]
 demo = demo[,.(seqn = seqn, age = ridageyr, pir = indfmpir, gender = riagendr)]
 bpx = bpx[,.(seqn = seqn,
-             # most people havn't test 4 so we just ignore it
+             # most people havn&#39;t test 4 so we just ignore it
              systolic = (bpxsy1+bpxsy2+bpxsy3)/3,
              diastolic = (bpxdi1+bpxdi2+bpxdi3)/3)][,
              diff:=systolic-diastolic
              ]
 
 # Combine the four data tables and drop the missing values
-mydata=dr1[dr2,on = 'seqn'][demo, , on = 'seqn'][bpx,,on = 'seqn'][,
+mydata=dr1[dr2,on = &#39;seqn&#39;][demo, , on = &#39;seqn&#39;][bpx,,on = &#39;seqn&#39;][,
           .(id = seqn, systolic, diastolic, diff, gender,
             alco = (dr1talco+dr2talco)/2, water = (dr1.320z+dr2.320z)/2,
             caff = (dr1tcaff+dr2tcaff)/2, sodi = (dr1tsodi+dr2tsodi)/2,
@@ -470,7 +471,7 @@ mydata=dr1[dr2,on = 'seqn'][demo, , on = 'seqn'][bpx,,on = 'seqn'][,
 mydata[,6:14] &lt;- lapply(mydata[,6:14], function(x) c(scale(x)))
 
 # Change gender 1/2 to -0.5/0.5
-mydata = mydata[, gender := ifelse(gender==1, -0.5, 0.5)]</code></pre>
+mydata = mydata[, gender := ifelse(gender==1, 0.5, -0.5)]</code></pre>
 <p>Gender was turned from 1 for ‘male’ and 2 for ‘female’ into 0.5 for ‘male’ and -0.5 for ‘female’, which makes interpretation of the coefficients of the interaction terms more meaningful.</p>
 </div>
 <div id="interaction-terms" class="section level4">
@@ -523,29 +524,124 @@ lars_diff =
 <div id="results" class="section level3">
 <h3><em>Results</em></h3>
 <p>Here are the resulting coefficients from the two models:</p>
-<pre><code>## 21 x 2 sparse Matrix of class &quot;dgCMatrix&quot;
-##                    systolic  difference
-## (Intercept)    120.24257198 54.21920311
-## gender          -3.08082888 -3.00250291
-## alco             1.22827081 -0.28493145
-## water            0.40144181 -1.04960529
-## caff             3.01122574  1.22782977
-## sodi            -0.35509943 -1.35679131
-## fat             -0.25227145  0.39129832
-## sugr            -1.16501564 -1.10700251
-## iron            -0.78473460  0.07170898
-## fibe             0.44245508 -0.10108268
-## prot            -0.17774261 -0.59390243
-## gender_alco     -0.80605748 -0.98851441
-## gender_water     .           0.84079587
-## gender_caff      0.36577881  0.85904888
-## gender_sodi     -0.61389111 -0.12793518
-## gender_fat       .          -0.79806811
-## gender_sugr      .           .         
-## gender_iron      .           .         
-## gender_fibe      .           .         
-## gender_prot      .           .         
-## lambda_min_mse   0.07306032  0.07639702</code></pre>
+<table>
+<caption>LASSO Coefficients for Systolic and Difference</caption>
+<thead>
+<tr class="header">
+<th></th>
+<th align="right">systolic</th>
+<th align="right">difference</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>(Intercept)</td>
+<td align="right">120.24257</td>
+<td align="right">54.21920</td>
+</tr>
+<tr class="even">
+<td>gender</td>
+<td align="right">3.08083</td>
+<td align="right">3.00250</td>
+</tr>
+<tr class="odd">
+<td>alco</td>
+<td align="right">1.22827</td>
+<td align="right">-0.28493</td>
+</tr>
+<tr class="even">
+<td>water</td>
+<td align="right">0.40144</td>
+<td align="right">-1.04961</td>
+</tr>
+<tr class="odd">
+<td>caff</td>
+<td align="right">3.01123</td>
+<td align="right">1.22783</td>
+</tr>
+<tr class="even">
+<td>sodi</td>
+<td align="right">-0.35510</td>
+<td align="right">-1.35679</td>
+</tr>
+<tr class="odd">
+<td>fat</td>
+<td align="right">-0.25227</td>
+<td align="right">0.39130</td>
+</tr>
+<tr class="even">
+<td>sugr</td>
+<td align="right">-1.16502</td>
+<td align="right">-1.10700</td>
+</tr>
+<tr class="odd">
+<td>iron</td>
+<td align="right">-0.78473</td>
+<td align="right">0.07171</td>
+</tr>
+<tr class="even">
+<td>fibe</td>
+<td align="right">0.44246</td>
+<td align="right">-0.10108</td>
+</tr>
+<tr class="odd">
+<td>prot</td>
+<td align="right">-0.17774</td>
+<td align="right">-0.59390</td>
+</tr>
+<tr class="even">
+<td>gender_alco</td>
+<td align="right">0.80606</td>
+<td align="right">0.98851</td>
+</tr>
+<tr class="odd">
+<td>gender_water</td>
+<td align="right">0.00000</td>
+<td align="right">-0.84080</td>
+</tr>
+<tr class="even">
+<td>gender_caff</td>
+<td align="right">-0.36578</td>
+<td align="right">-0.85905</td>
+</tr>
+<tr class="odd">
+<td>gender_sodi</td>
+<td align="right">0.61389</td>
+<td align="right">0.12794</td>
+</tr>
+<tr class="even">
+<td>gender_fat</td>
+<td align="right">0.00000</td>
+<td align="right">0.79807</td>
+</tr>
+<tr class="odd">
+<td>gender_sugr</td>
+<td align="right">0.00000</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="even">
+<td>gender_iron</td>
+<td align="right">0.00000</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="odd">
+<td>gender_fibe</td>
+<td align="right">0.00000</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="even">
+<td>gender_prot</td>
+<td align="right">0.00000</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="odd">
+<td>lambda_min_mse</td>
+<td align="right">0.07306</td>
+<td align="right">0.07640</td>
+</tr>
+</tbody>
+</table>
+<p>Women’s systolic blood pressure is more effected by caffeine, while men’s systolic blood pressure is more effected by sodium. Women’s difference in blood pressure is more effected by water and caffeine, while men’s difference is more effected by alcohol, fat, and sodium.</p>
 </div>
 </div>
 <div id="r-using-dplyr-and-glmnet" class="section level2">
@@ -558,11 +654,11 @@ library(Hmisc)
 library(SASxport)</code></pre>
 <pre class="r"><code># read in the  data: -----------------------------------------------------------
 ## This data will be used in the question.
-url_base &lt;- 'https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/'
+url_base &lt;- &#39;https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/&#39;
 
-demo_file &lt;- '../DATA/DEMO_I.XPT'
+demo_file &lt;- &#39;../DATA/DEMO_I.XPT&#39;
 if ( !file.exists(demo_file) ) {
-  demo_url &lt;- sprintf('%s/DEMO_I.XPT', url_base)
+  demo_url &lt;- sprintf(&#39;%s/DEMO_I.XPT&#39;, url_base)
   demo &lt;- sasxport.get(demo_url)
   write.xport(demo, file = demo_file)
 } else {
@@ -591,7 +687,7 @@ dr2 = dr2 %&gt;%
 
 # collapse two day data and take the mean of tot nutrient intake.
 dr = dr1 %&gt;%
-  left_join(dr2, by = c('seqn', 'meas'))  %&gt;%
+  left_join(dr2, by = c(&#39;seqn&#39;, &#39;meas&#39;))  %&gt;%
   gather(key = &quot;svy_day&quot;, value = &quot;value&quot;, day1:day2) %&gt;%
   spread(key = &quot;meas&quot;, value = &quot;value&quot; ) %&gt;%
   group_by(seqn) %&gt;%
@@ -605,7 +701,7 @@ demo = demo %&gt;%
   transmute(seqn = seqn, gender = riagendr)
 
 bpx = bpx %&gt;%
-  # most people havn't test 4 so we just ignore it
+  # most people havn&#39;t test 4 so we just ignore it
   transmute(seqn = seqn, bpxsy_avg = (bpxsy1+bpxsy2+bpxsy3)/3,
             bpxdiff_avg = ((bpxsy1-bpxdi1)+(bpxsy2-bpxdi2)+(bpxsy3-bpxdi3))/3)
 
@@ -657,7 +753,7 @@ penalty.factor = append(rep(0,10),rep(1, 9))
 
 # The cross-validation using 20 folded training-test set.
 mod_cv1 &lt;- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(2)]), nfolds = 20,
-                     type.measure = &quot;mse&quot;, family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)</code></pre>
+                     type.measure = &quot;mse&quot;, family=&#39;gaussian&#39;, parallel = TRUE, penalty.factor = penalty.factor)</code></pre>
 <pre><code>## Warning: executing %dopar% sequentially: no parallel backend registered</code></pre>
 <pre class="r"><code>min_lambda1 = mod_cv1$lambda.min
 
@@ -670,7 +766,7 @@ set.seed(1984)
 
 # The cross-validation using 20 folded training-test set.
 mod_cv2 &lt;- cv.glmnet(x=as.matrix(df[,c(4:22)]), y=as.matrix(df[,c(3)]), nfolds = 20,
-                     type.measure = &quot;mse&quot;, family='gaussian', parallel = TRUE, penalty.factor = penalty.factor)
+                     type.measure = &quot;mse&quot;, family=&#39;gaussian&#39;, parallel = TRUE, penalty.factor = penalty.factor)
 
 min_lambda2 = mod_cv2$lambda.min
 
@@ -678,7 +774,7 @@ plot(mod_cv2$lambda, mod_cv2$cvm, ylab = &quot;Mean standard error&quot;, xlab =
      main = &quot;Cross-validation for lambda in pressure difference&quot;)
 abline(v = mod_cv2$lambda.min)</code></pre>
 <p><img src="data:image/png;base64,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" width="672" /></p>
-<p>As shown in the above figures, the curve of MSE vs. <span class="math inline">\(\lambda\)</span> is not convex, so running the CV multiple times may result in different optimal <span class="math inline">\(\lambda\)</span> selections. At this point, we selected a case where <span class="math inline">\(\lambda_{min}\)</span> is not usual and set that <span class="math inline">\(\lambda\)</span> as the parameter for LASSO modeling.</p>
+<p>As shown in the above figures, the curve of MSE vs. <span class="math inline">\(\lambda\)</span> is not convex, so running the CV multiple times may result in different optimal <span class="math inline">\(\lambda\)</span> selections. At this point, we selected a case where <span class="math inline">\(\lambda_{min}\)</span> is not usual and set that <span class="math inline">\(\lambda\)</span> as the parameter for LASSO modeling.</p>
 </div>
 <div id="lasso-modeling" class="section level4">
 <h4><em>LASSO Modeling</em></h4>
@@ -696,44 +792,136 @@ coef2 = coef(m2)
 coef = cbind(coef1, coef2)
 lambda = cbind(min_lambda1, min_lambda2)
 rownames(lambda) = &quot;lambda_min_mse&quot;
-coef = rbind(coef, lambda)
+coef = as.data.frame(as.matrix(rbind(coef, lambda)))
 colnames(coef) = c(&quot;systolic&quot;, &quot;difference&quot;)
 
-coef</code></pre>
-<pre><code>## 21 x 2 sparse Matrix of class &quot;dgCMatrix&quot;
-##                    systolic  difference
-## (Intercept)    120.24990505 54.21112287
-## gender           3.07414257  3.00998683
-## alco             1.24848776 -0.30323255
-## caff             3.00505199  1.23334135
-## fat             -0.24780039  0.38385173
-## fibe             0.44330114 -0.10243661
-## iron            -0.78346380  0.06930378
-## prot            -0.17097552 -0.59125771
-## sodi            -0.36300699 -1.35787021
-## sugr            -1.16708877 -1.10451324
-## water            0.40162436 -1.04866484
-## gender_alco      0.74638289  1.04502643
-## gender_caff     -0.32413095 -0.90165409
-## gender_fat       .           0.83080866
-## gender_fibe      .           .         
-## gender_iron      .           .         
-## gender_prot      .           .         
-## gender_sodi      0.57951798  0.14171136
-## gender_sugr      .           .         
-## gender_water     .          -0.87404138
-## lambda_min_mse   0.08027007  0.06960273</code></pre>
+knitr::kable(coef, caption = &quot;LASSO Coefficients for Systolic and Difference&quot;, digits = 5)</code></pre>
+<table>
+<caption>LASSO Coefficients for Systolic and Difference</caption>
+<thead>
+<tr class="header">
+<th></th>
+<th align="right">systolic</th>
+<th align="right">difference</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>(Intercept)</td>
+<td align="right">120.24991</td>
+<td align="right">54.21112</td>
+</tr>
+<tr class="even">
+<td>gender</td>
+<td align="right">3.07414</td>
+<td align="right">3.00999</td>
+</tr>
+<tr class="odd">
+<td>alco</td>
+<td align="right">1.24849</td>
+<td align="right">-0.30323</td>
+</tr>
+<tr class="even">
+<td>caff</td>
+<td align="right">3.00505</td>
+<td align="right">1.23334</td>
+</tr>
+<tr class="odd">
+<td>fat</td>
+<td align="right">-0.24780</td>
+<td align="right">0.38385</td>
+</tr>
+<tr class="even">
+<td>fibe</td>
+<td align="right">0.44330</td>
+<td align="right">-0.10244</td>
+</tr>
+<tr class="odd">
+<td>iron</td>
+<td align="right">-0.78346</td>
+<td align="right">0.06930</td>
+</tr>
+<tr class="even">
+<td>prot</td>
+<td align="right">-0.17098</td>
+<td align="right">-0.59126</td>
+</tr>
+<tr class="odd">
+<td>sodi</td>
+<td align="right">-0.36301</td>
+<td align="right">-1.35787</td>
+</tr>
+<tr class="even">
+<td>sugr</td>
+<td align="right">-1.16709</td>
+<td align="right">-1.10451</td>
+</tr>
+<tr class="odd">
+<td>water</td>
+<td align="right">0.40162</td>
+<td align="right">-1.04866</td>
+</tr>
+<tr class="even">
+<td>gender_alco</td>
+<td align="right">0.74638</td>
+<td align="right">1.04503</td>
+</tr>
+<tr class="odd">
+<td>gender_caff</td>
+<td align="right">-0.32413</td>
+<td align="right">-0.90165</td>
+</tr>
+<tr class="even">
+<td>gender_fat</td>
+<td align="right">0.00000</td>
+<td align="right">0.83081</td>
+</tr>
+<tr class="odd">
+<td>gender_fibe</td>
+<td align="right">0.00000</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="even">
+<td>gender_iron</td>
+<td align="right">0.00000</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="odd">
+<td>gender_prot</td>
+<td align="right">0.00000</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="even">
+<td>gender_sodi</td>
+<td align="right">0.57952</td>
+<td align="right">0.14171</td>
+</tr>
+<tr class="odd">
+<td>gender_sugr</td>
+<td align="right">0.00000</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="even">
+<td>gender_water</td>
+<td align="right">0.00000</td>
+<td align="right">-0.87404</td>
+</tr>
+<tr class="odd">
+<td>lambda_min_mse</td>
+<td align="right">0.08027</td>
+<td align="right">0.06960</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div id="result" class="section level4">
 <h4><em>Result</em></h4>
 <p>Given our main purpose and the model setup, we are only interested in the interaction terms with non-zero coefficients. The interaction terms for systolic pressure and pressure difference are shown in the following tables.</p>
 <p>For systolic pressure:</p>
-<pre><code>## gender_alco gender_caff gender_sodi 
-##   0.7463829  -0.3241309   0.5795180</code></pre>
+<pre><code>## [1]  0.7463829 -0.3241309  0.5795180</code></pre>
 <p>From these coefficients, we can infer that, compared to men’s blood pressure, women’s systolic blood pressure is more likely to increase with the increase of caffeine intake. However, an increase of sodium or alcohol intake will affect more men’s systolic blood pressure more.</p>
 <p>For blood pressure difference:</p>
-<pre><code>##  gender_alco  gender_caff   gender_fat  gender_sodi gender_water 
-##    1.0450264   -0.9016541    0.8308087    0.1417114   -0.8740414</code></pre>
+<pre><code>## [1]  1.0450264 -0.9016541  0.8308087  0.1417114 -0.8740414</code></pre>
 <p>As the table above shows, we can infer that, compared to men’s blood pressure difference, women’s blood pressure difference is more likely to increase by an increase in caffeine or water intake. However, an increase of sodium, fat or alcohol intake will affect men’s difference in blood pressure more.</p>
 <p>In the blood pressure difference results, we see that interaction term with water is on the same scale as the term with caffeine, which might imply a correlation between the water and caffeine variables.</p>
 <p>Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn’t imply that women have a higher caffeine intake. The caffeine intake of women is actually lower than men’s. The most reasonable interpretation of these results is that women’s blood pressure is more sensitive to caffeine while men’s is more sensitive to alcohol.</p>
@@ -847,9 +1035,9 @@ collapse (mean) gender systolic diastolic fat sugar protein fiber sodium iron al
 <p>The easy parameters were the response variables: systolic blood pressure and the difference in blood pressures. The predictor variables, though, needed to be standardized before they could be put into the model. Here is the code to standardize by mean and standard deviation:</p>
 <pre class="stata"><code>/// standardize
 foreach i in systolic diastolic fat sugar protein fiber sodium iron alcohol caff water {
-    egen `i'_mean = mean(`i')
-    egen `i'_std = sd(`i')
-    generate `i'_s = (`i'-`i'_mean)/`i'_std
+    egen `i&#39;_mean = mean(`i&#39;)
+    egen `i&#39;_std = sd(`i&#39;)
+    generate `i&#39;_s = (`i&#39;-`i&#39;_mean)/`i&#39;_std
 }</code></pre>
 <p>Gender was turned into a continuous variable by setting ‘male’ to 0.5 and ‘female’ to -0.5. Using this method, we can interpret a negative coefficient as the variable being more important for women than for men and vice versa.</p>
 <pre class="stata"><code>/// set up gend as continuous
@@ -1111,15 +1299,15 @@ lasso linear systolic_s gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend prote
 <tbody>
 <tr class="odd">
 <td align="left">caff#gend</td>
-<td align="right">-0.0063288</td>
+<td align="right">-0.00633</td>
 </tr>
 <tr class="even">
 <td align="left">sodium#gend</td>
-<td align="right">0.0132059</td>
+<td align="right">0.01321</td>
 </tr>
 <tr class="odd">
 <td align="left">alcohol#gend</td>
-<td align="right">0.0170176</td>
+<td align="right">0.01702</td>
 </tr>
 </tbody>
 </table>
@@ -1135,23 +1323,23 @@ lasso linear systolic_s gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend prote
 <tbody>
 <tr class="odd">
 <td align="left">water#gend</td>
-<td align="right">-0.0316054</td>
+<td align="right">-0.03161</td>
 </tr>
 <tr class="even">
 <td align="left">caff#gend</td>
-<td align="right">-0.0272716</td>
+<td align="right">-0.02727</td>
 </tr>
 <tr class="odd">
 <td align="left">sugar#gend</td>
-<td align="right">-0.0028057</td>
+<td align="right">-0.00281</td>
 </tr>
 <tr class="even">
 <td align="left">alcohol#gend</td>
-<td align="right">0.0275895</td>
+<td align="right">0.02759</td>
 </tr>
 <tr class="odd">
 <td align="left">fat#gend</td>
-<td align="right">0.0287647</td>
+<td align="right">0.02876</td>
 </tr>
 </tbody>
 </table>
@@ -1171,7 +1359,7 @@ lasso linear systolic_s gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend prote
 <h2>R’s <em>glmnet</em> Function and Stata’s <em>lasso</em> Command</h2>
 <p>In order to compare contrast the analyses, we will use the <span class="math inline">\(\lambda_{min}\)</span> from Stata’s cross-validation and the Stata ending dataset for glmnet modeling.</p>
 <pre class="r"><code>set.seed(1949)
-df_L = read.csv('../DL/final_stata_data.csv')
+df_L = read.csv(&#39;../DL/final_stata_data.csv&#39;)
 df_L = df_L  %&gt;%
   mutate(gend_alco = gend*alcohol_s,
          gend_caff = gend*caff_s,
@@ -1200,33 +1388,127 @@ coef4 = coef(m4)
 coef = cbind(coef3, coef4)
 lambda = cbind(min_lambda3, min_lambda4)
 rownames(lambda) = &quot;lambda_min_mse&quot;
-coef = rbind(coef, lambda)
+coef = as.data.frame(as.matrix(rbind(coef, lambda)))
 colnames(coef) = c(&quot;systolic&quot;, &quot;difference&quot;)
 
-coef</code></pre>
-<pre><code>21 x 2 sparse Matrix of class &quot;dgCMatrix&quot;
-                   systolic   difference
-(Intercept)    -0.003542060 -0.006066645
-fat_s          -0.013585273  0.033776976
-sugar_s        -0.064710638 -0.059571056
-protein_s      -0.008923244 -0.039584565
-fiber_s         0.024640448 -0.015679871
-sodium_s       -0.020137625 -0.094914845
-iron_s         -0.043457532  0.019640791
-alcohol_s       0.071321914 -0.043155000
-caff_s          0.165578857  0.034688245
-water_s         0.022275514 -0.084906301
-gend            0.169448096  0.164594885
-gend_alco       0.034263346  0.055707825
-gend_caff      -0.012709718 -0.054772103
-gend_fat        .            0.059130121
-gend_fibe       .            .          
-gend_iron       .            .          
-gend_prot       .            .          
-gend_sodi       0.027619267  .          
-gend_sugr       .           -0.005689092
-gend_water      .           -0.063224977
-lambda_min_mse  0.005352500  0.004523500</code></pre>
+knitr:: kable(coef, caption = &quot;LASSO Coefficients for Systolic and Difference&quot;, digits = 5)</code></pre>
+<table>
+<caption>LASSO Coefficients for Systolic and Difference</caption>
+<thead>
+<tr class="header">
+<th></th>
+<th align="right">systolic</th>
+<th align="right">difference</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>(Intercept)</td>
+<td align="right">-0.00354</td>
+<td align="right">-0.00607</td>
+</tr>
+<tr class="even">
+<td>fat_s</td>
+<td align="right">-0.01359</td>
+<td align="right">0.03378</td>
+</tr>
+<tr class="odd">
+<td>sugar_s</td>
+<td align="right">-0.06471</td>
+<td align="right">-0.05957</td>
+</tr>
+<tr class="even">
+<td>protein_s</td>
+<td align="right">-0.00892</td>
+<td align="right">-0.03958</td>
+</tr>
+<tr class="odd">
+<td>fiber_s</td>
+<td align="right">0.02464</td>
+<td align="right">-0.01568</td>
+</tr>
+<tr class="even">
+<td>sodium_s</td>
+<td align="right">-0.02014</td>
+<td align="right">-0.09491</td>
+</tr>
+<tr class="odd">
+<td>iron_s</td>
+<td align="right">-0.04346</td>
+<td align="right">0.01964</td>
+</tr>
+<tr class="even">
+<td>alcohol_s</td>
+<td align="right">0.07132</td>
+<td align="right">-0.04316</td>
+</tr>
+<tr class="odd">
+<td>caff_s</td>
+<td align="right">0.16558</td>
+<td align="right">0.03469</td>
+</tr>
+<tr class="even">
+<td>water_s</td>
+<td align="right">0.02228</td>
+<td align="right">-0.08491</td>
+</tr>
+<tr class="odd">
+<td>gend</td>
+<td align="right">0.16945</td>
+<td align="right">0.16459</td>
+</tr>
+<tr class="even">
+<td>gend_alco</td>
+<td align="right">0.03426</td>
+<td align="right">0.05571</td>
+</tr>
+<tr class="odd">
+<td>gend_caff</td>
+<td align="right">-0.01271</td>
+<td align="right">-0.05477</td>
+</tr>
+<tr class="even">
+<td>gend_fat</td>
+<td align="right">0.00000</td>
+<td align="right">0.05913</td>
+</tr>
+<tr class="odd">
+<td>gend_fibe</td>
+<td align="right">0.00000</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="even">
+<td>gend_iron</td>
+<td align="right">0.00000</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="odd">
+<td>gend_prot</td>
+<td align="right">0.00000</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="even">
+<td>gend_sodi</td>
+<td align="right">0.02762</td>
+<td align="right">0.00000</td>
+</tr>
+<tr class="odd">
+<td>gend_sugr</td>
+<td align="right">0.00000</td>
+<td align="right">-0.00569</td>
+</tr>
+<tr class="even">
+<td>gend_water</td>
+<td align="right">0.00000</td>
+<td align="right">-0.06322</td>
+</tr>
+<tr class="odd">
+<td>lambda_min_mse</td>
+<td align="right">0.00535</td>
+<td align="right">0.00452</td>
+</tr>
+</tbody>
+</table>
 <p>Compared to the coefficients produced by Stata, the glmnet coefficient results are not exactly same even though the data frame used for LASSO regression and the <span class="math inline">\(\lambda\)</span> value are exactly copied from the Stata analysis. Although the rankings of the variables with more extreme coefficients are consistent, there are some numeric differences in all the coefficients.</p>
 <p>This might be a result from glmnet setting coefficients to zero at larger constant cut-off point than Stata does. It is commonly believed that glmnet’s LASSO selection operation is optimized when the number of predictors (<span class="math inline">\(p\)</span>) greatly overweigh the number of observations (<span class="math inline">\(n\)</span>), with the form <span class="math inline">\(p &gt; n^n\)</span>. However, in our models, the number of predictors is only 5% of the number of observations, which implies that glmnet must have done some approximation to shrink the non-zero coefficients to zero. The Stata’s result, then, may be closer to the actual model using LASSO, than the glmnet’s result.</p>
 </div>
@@ -1238,7 +1520,7 @@ lambda_min_mse  0.005352500  0.004523500</code></pre>
 <p><em>Doing Harm</em> by Maya Dusenbery: <a href="https://www.mayadusenbery.com/book" class="uri">https://www.mayadusenbery.com/book</a></p>
 <p>Updating Gender Inclusivity: <a href="https://www.heart.org/en/health-topics/heart-attack/warning-signs-of-a-heart-attack/heart-attack-symptoms-in-women" class="uri">https://www.heart.org/en/health-topics/heart-attack/warning-signs-of-a-heart-attack/heart-attack-symptoms-in-women</a></p>
 <p>Blood Pressure and Chronic Disease: <a href="https://www.mayoclinic.org/diseases-conditions/high-blood-pressure/in-depth/blood-pressure/art-20050982" class="uri">https://www.mayoclinic.org/diseases-conditions/high-blood-pressure/in-depth/blood-pressure/art-20050982</a> and <a href="https://www.mayoclinic.org/diseases-conditions/high-blood-pressure/symptoms-causes/syc-20373410" class="uri">https://www.mayoclinic.org/diseases-conditions/high-blood-pressure/symptoms-causes/syc-20373410</a></p>
-<p>LASSO: Faraway, Julian James. Linear Models with R. CRC Press LLC, 2009.</p>
+<p>LASSO: Casella, George, and Roger L. Berger. <em>Statistical Inference</em>. Duxbury, 2002.</p>
 </div>
 
 
