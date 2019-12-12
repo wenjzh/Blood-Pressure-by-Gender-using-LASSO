@@ -434,7 +434,7 @@ where $c_j$ is the penalty factor we used for each term.
 
 Before we fit the LASSO model for each response, we first need the appropriate $\lambda$ to control the L1 penalty on the interaction terms.
 
-```{r}
+```{r, fig.align='center'}
 library("glmnet")
 # for bpxsy as response
 set.seed(1984)
@@ -488,7 +488,8 @@ rownames(lambda) = "lambda_min_mse"
 coef = as.data.frame(as.matrix(rbind(coef, lambda)))
 colnames(coef) = c("systolic", "difference")
 
-knitr::kable(coef, caption = "LASSO Coefficients for Systolic and Difference", digits = 5)
+knitr::kable(coef, caption = "LASSO Coefficients for Systolic and Difference", digits = 5) %>%
+  kable_styling(full_width = F)
 ```
 
 
@@ -693,7 +694,8 @@ lasso linear systolic_s gend fat_s c.fat_s#c.gend sugar_s c.sugar_s#c.gend prote
 
 Here are the results:
 ```{r, echo = FALSE}
-knitr::kable(dt_df, caption = "Comparing Systolic Coefficients", digits = 5)
+knitr::kable(dt_df, caption = "Comparing Systolic Coefficients", digits = 5) %>%
+  kable_styling(full_width = F)
 ```
 
 
@@ -701,13 +703,13 @@ All the interaction coefficients were set to 0 in both cases, which is not consi
 
 Here is the CV plot to choose $\lambda$ for the systolic model:
 
-```{r, echo = FALSE, out.width = '50%'}
+```{r, echo = FALSE, out.width = '50%', fig.align='center'}
 knitr::include_graphics("./DL_results/sys_cvplot.png")
 ```
 
 And here is the CV plot to choose $\lambda$ for the difference model:
 
-```{r, echo = FALSE, out.width = '50%'}
+```{r, echo = FALSE, out.width = '50%', fig.align='center'}
 knitr::include_graphics("./DL_results/diff_cvplot.png")
 ```
 
@@ -715,8 +717,10 @@ knitr::include_graphics("./DL_results/diff_cvplot.png")
 Here are the resulting coefficients from the two models:
 
 ```{r, echo = FALSE}
-knitr::kable(sys_table, caption = "Systolic LASSO Coefficients", digits = 5)
-knitr::kable(diff_table, caption = "Difference LASSO Coefficients", digits = 5)
+knitr::kable(sys_table, caption = "Systolic LASSO Coefficients", digits = 5) %>%
+  kable_styling(full_width = F)
+knitr::kable(diff_table, caption = "Difference LASSO Coefficients", digits = 5) %>%
+  kable_styling(full_width = F)
 ```
 
 
@@ -725,7 +729,8 @@ Since we're only interested in the interaction coefficients, here are the tables
 sys_interact <- sys_table %>%
   filter(grepl('#', Variables)) %>%
   arrange(Coefficients)
-knitr::kable(sys_interact, caption = "Systolic Gender-Interaction Coefficients", digits = 5)
+knitr::kable(sys_interact, caption = "Systolic Gender-Interaction Coefficients", digits = 5) %>%
+  kable_styling(full_width = F)
 ```
 
 
@@ -736,7 +741,8 @@ We are using systolic blood pressure as a measure of both systolic and diastolic
 diff_interact <- diff_table %>%
   filter(grepl('#', Variables)) %>%
   arrange(Coefficients)
-knitr::kable(diff_interact, caption = "Difference Gender-Interaction Coefficients", digits = 5)
+knitr::kable(diff_interact, caption = "Difference Gender-Interaction Coefficients", digits = 5) %>%
+  kable_styling(full_width = F)
 ```
 
 
@@ -791,7 +797,8 @@ rownames(lambda) = "lambda_min_mse"
 coef = as.data.frame(as.matrix(rbind(coef, lambda)))
 colnames(coef) = c("systolic", "difference")
 
-knitr:: kable(coef, caption = "LASSO Coefficients for Systolic and Difference", digits = 5)
+knitr:: kable(coef, caption = "LASSO Coefficients for Systolic and Difference", digits = 5) %>%
+  kable_styling(full_width = F)
 
 ```
 
