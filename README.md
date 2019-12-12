@@ -2,7 +2,6 @@
 
 - [STATS 506 Group Project F19](#stats-506-group-project-f19)
   - [Author: Group 2](#author-group-2)
-  - [To Do](#to-do)
   - [Navigation](#navigation)
     - [Report](#report)
     - [Data Sets](#data-sets)
@@ -19,12 +18,6 @@ Diana Liang ([STATA](./DL/Final&#32;Documents/))
 Sijun Zhang ([dplyr_glmnet](./ZSJ/FINAL/))
 
 Wenjing Zhou ([data.table_customized_cross-validation](./Wenjing/))
-
-## To Do
-
-Code review for styling purpose
-
-Customized Cross Validation function in data.table analysis
 
 ## Navigation
 
