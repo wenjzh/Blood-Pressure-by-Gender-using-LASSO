@@ -71,6 +71,9 @@ To run the group_2_final.Rmd file in Draft folder, the following packages should
 | 1.12.2  | data.table         |
 | 0.4.0   | Statamarkdown      |
 | 1.1.0   | kableExtra         |
+| x.x.x   | doMC               |
+
+doMC is only available in UNIX-like System. The install process has been embedded in the group_2_final.Rmd file, thus the UNIX-like System user can run the group_2_final.Rmd directly after meeting the requirements other than doMC.
 
 ### Install Statamarkdown
 As *Statamarkdown* doesn't support direct downloading using install.packages(), we can use the devtools package to install it from github.com.
