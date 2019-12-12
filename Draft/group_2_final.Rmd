@@ -243,7 +243,7 @@ Notes: Here Wenjing used "cv.glmnet" to realize the cross validation. She will u
 
 #### *Modeling*
 
-After all that preparation work, here we applied the chosen labda and penalty factor into the glmnet function to achieve the goal of only penalizing interaction terms.
+After the preparation work is complete, we applied the chosen lambda and penalty factor to the glmnet function, only penalizing the interaction terms.
 
 ```{r model}
 lars_syst = 
@@ -256,7 +256,7 @@ lars_diff =
 ```
 
 ### _Results_
-We only focus on the coefficients of the interaction terms. Here are the resulting coefficients combined from the two models. 
+We are only focused on the coefficients of the interaction terms. Here are the resulting coefficients from the two models. 
 
 ```{r collection, echo = FALSE}
 # data collection
@@ -272,11 +272,12 @@ knitr::kable(coef_int, digits=3, caption = "Nutrition Influence on Blood Pressur
   kable_styling(full_width = F)
 ```
 
-Remember that gender = 0.5 representing male and -0.5 representing female. In our common sense, the propotion of men with hypertention are higher than that of women, which is also supported by our results: coefficients of gender in both model are negative.
 
-In the first model within systolic pressure as response, the variables with the greatest difference between men and women are sodium, alcohol, and caffeine. We can see that men's systolic pressure is affected by alcohol and sodium, while women's blood pressure is affected by caffeine.In the second model within difference between systolic and diastolic pressure as response, the variables with the greatest difference between men and women are sodium, alcohol, fat, water, and caffeine. We can see that men's systolic pressure is more affected by sodium, alcohol and fat, while women's blood pressure is affected by caffeine and water.
+Remember that gender = 0.5 representing male and -0.5 representing female. From previous research, we know that hypertension is more common in men than in women, which is also supported by our results: coefficients of gender in both model are negative.
 
-To make a robust conclusion, we considered both models together. In conclusion, men's systolic pressure is more affected by sodium, alcohol, while women's blood pressure is affected by caffeine. This results may help people to get more ideas about how to prevent hypertension: men should be more careful about alcohol intaking and women should pay more attention to caffeine intaking.
+In the first model, with systolic blood pressure as the response, the variables with the greatest difference between men and women are sodium, alcohol, and caffeine. We can see that men's systolic blood pressure is more effected by alcohol and sodium, while women's blood pressure is more effected by caffeine. In the second model, with difference between systolic and diastolic blood pressure as the response, the variables with the greatest difference between men and women are sodium, alcohol, fat, water, and caffeine. We can see that men's difference in blood pressure is more effected by sodium, alcohol and fat, while women's difference in blood pressure is more effected by caffeine and water.
+
+To make a robust conclusion, we have considered both models together. Men's blood pressure in general is more effected by sodium and alcohol, while women's blood pressure is more effected by caffeine.
 
 
 ## R using dplyr and glmnet
@@ -490,6 +491,7 @@ colnames(coef) = c("systolic", "difference")
 knitr::kable(coef, caption = "LASSO Coefficients for Systolic and Difference", digits = 5)
 ```
 
+
 #### *Result*
 
 Given our main purpose and the model setup, we are only interested in the interaction terms with non-zero coefficients. The interaction terms for systolic pressure and pressure difference are shown in the following tables.
@@ -694,6 +696,7 @@ Here are the results:
 knitr::kable(dt_df, caption = "Comparing Systolic Coefficients", digits = 5)
 ```
 
+
 All the interaction coefficients were set to 0 in both cases, which is not consistent with the R analyses. These results suggest that either the final data that the models were performed on were significantly different or the way R and Stata do LASSO regression is different. Instead of using the same $\lambda$, we decided to allow CV to choose $\lambda$.
 
 Here is the CV plot to choose $\lambda$ for the systolic model:
@@ -716,6 +719,7 @@ knitr::kable(sys_table, caption = "Systolic LASSO Coefficients", digits = 5)
 knitr::kable(diff_table, caption = "Difference LASSO Coefficients", digits = 5)
 ```
 
+
 Since we're only interested in the interaction coefficients, here are the tables only including the interaction coefficients:
 ```{r, echo = FALSE, out.width = '50%'}
 sys_interact <- sys_table %>%
@@ -723,6 +727,7 @@ sys_interact <- sys_table %>%
   arrange(Coefficients)
 knitr::kable(sys_interact, caption = "Systolic Gender-Interaction Coefficients", digits = 5)
 ```
+
 
 We are using systolic blood pressure as a measure of both systolic and diastolic blood pressure. The variables with the greatest difference between men and women are sodium, alcohol, and caffeine. So, women's blood pressure is slightly more affected by caffeine; while men's blood pressure is more significantly affected by sodium and alcohol.
 
@@ -734,6 +739,7 @@ diff_interact <- diff_table %>%
 knitr::kable(diff_interact, caption = "Difference Gender-Interaction Coefficients", digits = 5)
 ```
 
+
 Difference between the blood pressures is a more accurate measure of systolic blood pressure since the only way for there to be a greater difference is if only systolic blood pressure rises without diastolic blood pressure rising. Now the variables with the greatest difference between genders are caffeine, water, alcohol, fat, and sugar. Women's blood pressure is slighly more affected by sugar but more significantly affected by caffeine and water; while men's blood pressure is more significantly affected by alcohol and fat.
 
 # **Discussion and Conclusion**
@@ -742,7 +748,7 @@ Difference between the blood pressures is a more accurate measure of systolic bl
 
 Overall, both the glmnet function in R and the LASSO command in Stata produced similar results: that women's blood pressure increase is more effected by caffeine, and men's blood pressure increase is more effected by alcohol. Between the two languages, the scale of coefficients and $\lambda$ are not the same, even if they share the same signs and non-zero properties.
 
-Between all the models, the variables with the greatest difference by gender are alcohol and caffeine, though we can't say if the resulting coefficients are comparable between the models. Women's blood pressure seems to be more affected by caffeine; and men's blood pressure more affected by alcohol. Interestingly enough, both are non-essential liquids that are gender-coded: men are more socially pressured to drink alcohol while women are more socially pressured to drink caffeine. These results may simply be due to these social pressures affecting the respondents' bodies over time. Since blood pressure may influence one's judgment and endurance, these results may also imply that women have a higher alcohol tolerance than men. Either way, more surveys need to be done where these liquids are equalized between the genders over time.
+Between all the models, the variables with the greatest difference by gender are alcohol and caffeine, though we can't say if the resulting coefficients are comparable between the models. Women's blood pressure seems to be more affected by caffeine; and men's blood pressure more affected by alcohol. Interestingly enough, both are non-essential liquids that are gender-coded: men are more socially pressured to drink alcohol while women are more socially pressured to drink caffeine. These results may simply be due to these social pressures affecting the respondents' bodies over time. Since blood pressure may influence one's judgment and endurance, these results may also imply that women have a higher alcohol tolerance than men. More surveys need to be done where these liquids are equalized between the genders over time. In the meantime, these results may help prevent hypertension by focusing advice based on these gender differences: men should be more careful about alcohol intake and women should pay more attention to caffeine intake.
 
 This isn't to say that the other variables are not significant in determining blood pressure, only that the other variables affect blood pressure to a more equivalent degree between the two genders. Again, LASSO shrinks all coefficients so the remaining variables are the ones that have the most extreme coefficients. Our results, then, only display the variables that have the greatest difference in effect on blood pressure between the genders.
 
@@ -788,6 +794,7 @@ colnames(coef) = c("systolic", "difference")
 knitr:: kable(coef, caption = "LASSO Coefficients for Systolic and Difference", digits = 5)
 
 ```
+
 
 Compared to the coefficients produced by Stata, the glmnet coefficient results are not exactly same even though the data frame used for LASSO regression and the $\lambda$ value are exactly copied from the Stata analysis. Although the rankings of the variables with more extreme coefficients are consistent, there are some numeric differences in all the coefficients.
 
