@@ -1,7 +1,7 @@
 ---
 title: "Stats 506: Group 2 Project"
 author: "Wenjing Zhou, Sijun Zhang, Diana Liang"
-output: 
+output:
   html_document:
     toc: yes
 ---
@@ -79,6 +79,9 @@ This analysis will be done using three different techniques:
 
 ```{r dt, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 # Libraries: ------------------------------------------------------------------
+install.packages("https://cran.r-project.org/src/contrib/doMC_1.3.6.tar.gz",
+                 repos = NULL, type = "source")
+require(doMC)
 library(Hmisc)
 library(tidyverse)
 library(data.table)
@@ -163,7 +166,7 @@ mydata=dr1[dr2,on = 'seqn'][demo, , on = 'seqn'][bpx,,on = 'seqn'][,
             ! is.na(fibe) & ! is.na(prot), ]
 ```
 
-### _LASSO in glmnet_
+### _CV using parallel computing and LASSO in glmnet_
 At first, we planned to use the lars package for LASSO, but we can not add penalty weights in lars. Thus, we chose to use the glmnet package instead. The functions "cv.glmnet", "plot.cv.glmnet" and "glmnet" were utilized.
 
 #### *Response and Predictor Variables*
@@ -205,22 +208,66 @@ pnfc=c(rep(0,10),rep(1,9))
 
 In our data.table, the first two columns are the response variables; the 3rd to 10th columns are independent predictors and 11th to 21st columns are the interaction terms.
 
-#### *Cross Validation*
+#### *Cross Validation using parallel computing*
 
 Using "cv.glmnet" to choose the lambda with minimum MSE. In general, little inflation of lambda did not cause dramatic differences in LASSO results.
 
 ```{r glmnet, echo = TRUE, results = "hide"}
 # LASSO using glmnet package: alpha = 1 ---------------------------------------
-mydata = as.matrix(mydata)
+# install.packages("https://cran.r-project.org/src/contrib/doMC_1.3.6.tar.gz",
+#                 repos = NULL, type = "source")
+# require(doMC)
 
+# cross-validation using parallel computing
+doMC::registerDoMC(cores=4)
+cv_lambda = function (x, y, nfolds = 10) {
+  # Description: cross-validation to find lambda with minimum
+  # MSE using parallel computing
+  #
+  # Input:
+  # x - predictor matrix
+  # y - response matrix
+  # nfolds - number of folds;default is 10
+  #
+  # Output: lambda with minimum MSE
+  N = nrow(x)
+  weights = rep(1, N)
+  object = glmnet(x, y, weights = weights,
+                         family="gaussian",penalty.factor=pnfc,alpha = 1)
+  type.measure = cvtype("mse", class(object)[[1]])
+  foldid = sample(rep(seq(nfolds), length = N))
+  outlist = as.list(seq(nfolds))
+  outlist = foreach(i = seq(nfolds), .packages = c("glmnet")) %dopar%
+    {
+      which = foldid == i
+      if (length(dim(y)) > 1)
+        y_sub = y[!which, ]
+      else y_sub = y[!which]
+      offset_sub = NULL
+      glmnet(x[!which, , drop = FALSE], y_sub,
+             offset = offset_sub, weights = weights[!which],
+             family="gaussian",penalty.factor=pnfc,alpha = 1)
+    }
+  lambda = object$lambda
+  cvstuff = do.call("cv.elnet",list(outlist,lambda,x,y,weights,offset = NULL,
+                                     foldid, type.measure, grouped = TRUE,
+                                     keep = FALSE, alignment = "lambda"))
+  cvm = cvstuff$cvm
+  lambda.min=lambda[which.min(cvm)]
+
+  #output
+  object_cv = list(lambda = lambda, mse=cvm, lambda.min=lambda.min)
+  object_cv
+}
+
+mydata = as.matrix(mydata)
 set.seed(000)
-cv_syst = cv.glmnet(x=mydata[,3:21],y=mydata[,1], type.measure="mse", 
-                    family="gaussian",penalty.factor=pnfc,alpha = 1)
+cv_syst = cv_lambda(x=mydata[,3:21],y=mydata[,1])
 lambda_syst = cv_syst$lambda.min
 
-cv_diff = cv.glmnet(x=mydata[,3:21],y=mydata[,2], type.measure="mse",
-                    family="gaussian", penalty.factor=pnfc,alpha = 1)
+cv_diff = cv_lambda(x=mydata[,3:21],y=mydata[,2])
 lambda_diff = cv_diff$lambda.min
+
 ```
 
 However, there is one thing we have to pay attention to. From the plots, it is obvious that the curve id not convex, so if we get the lambda of the edge condition (in the first plot, it is the point around 0.2, which may also be chosen as the lambda with minimum MSE), the penalized coefficients will all be shrinked to 0, which is definitely not what we want. Thus, we avoid that by setting seed and choosing proper cross validation result.
@@ -228,7 +275,7 @@ However, there is one thing we have to pay attention to. From the plots, it is o
 Here is the CV plot to choose lambda for the systolic model:
 
 ```{r, echo = FALSE, out.width = '50%', fig.align='center'}
-plot(cv_syst$lambda, cv_syst$cvm, ylab = "Mean standard error", xlab = "lambda",
+plot(cv_syst$lambda, cv_syst$mse, ylab = "Mean standard error", xlab = "lambda",
      main = "Cross-validation for lambda in systolic pressure")
 abline(v = cv_syst$lambda.min)
 ```
@@ -236,29 +283,27 @@ abline(v = cv_syst$lambda.min)
 And here is the CV plot to choose lambda for the difference model:
 
 ```{r, echo = FALSE, out.width = '50%', fig.align='center'}
-plot(cv_diff$lambda, cv_diff$cvm, ylab = "Mean standard error", xlab = "lambda",
+plot(cv_diff$lambda, cv_diff$mse, ylab = "Mean standard error", xlab = "lambda",
      main = "Cross-validation for lambda in pressure difference")
 abline(v = cv_diff$lambda.min)
 ```
-
-Notes: Here Wenjing used "cv.glmnet" to realize the cross validation. She will update this using self-made cross validation function in the final version.
 
 #### *Modeling*
 
 After the preparation work is complete, we applied the chosen lambda and penalty factor to the glmnet function, only penalizing the interaction terms.
 
 ```{r model}
-lars_syst = 
+lars_syst =
   glmnet(x=mydata[,3:21],y=mydata[,1], penalty.factor=pnfc, family="gaussian",
          lambda=lambda_syst, alpha = 1,nlambda=100)
 
-lars_diff = 
+lars_diff =
   glmnet(x=mydata[,3:21],y=mydata[,2], penalty.factor=pnfc, family="gaussian",
          lambda=lambda_diff, alpha = 1,nlambda=100)
 ```
 
 ### _Results_
-We are only focused on the coefficients of the interaction terms. Here are the resulting coefficients from the two models. 
+We are only focused on the coefficients of the interaction terms. Here are the resulting coefficients from the two models.
 
 ```{r collection, echo = FALSE}
 # data collection
