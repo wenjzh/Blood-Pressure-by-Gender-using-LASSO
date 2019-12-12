@@ -1,7 +1,9 @@
 ---
 title: "Stats 506: Group 2 Project"
 author: "Wenjing Zhou, Sijun Zhang, Diana Liang"
-output: html_document
+output: 
+  html_document:
+    toc: yes
 ---
 # **Blood Pressure by Gender using LASSO**
 
@@ -161,7 +163,7 @@ mydata=dr1[dr2,on = 'seqn'][demo, , on = 'seqn'][bpx,,on = 'seqn'][,
             ! is.na(fibe) & ! is.na(prot), ]
 ```
 
-### _LASSO Using GLMNET_
+### _LASSO in glmnet_
 At first, we planned to use the lars package for LASSO, but we can not add penalty weights in lars. Thus, we chose to use the glmnet package instead. The functions "cv.glmnet", "plot.cv.glmnet" and "glmnet" were utilized.
 
 #### *Response and Predictor Variables*
@@ -282,7 +284,7 @@ To make a robust conclusion, we have considered both models together. Men's bloo
 
 ## R using dplyr and glmnet
 
-### _Preparing Data_
+### _Preparing the Data_
 
 We begin by importing all the 2015-2016 NHANES datasets. First, we must check if the data is already on file. If not, we will download the data from the website. Here is a sample importing process:
 
@@ -417,9 +419,9 @@ We have done the main LASSO modeling using Python, so the data is converted to a
 write.csv(df, file = "../DATA/group_2_df.csv", row.names = FALSE)
 ```
 
-### _LASSO by glmnet_
+### _LASSO in glmnet_
 
-#### *Penalty.factor*
+#### *Penalty Weights*
 
 Since our main purpose is to find how gender affects the relationship between the nutrition intake and the blood pressure, we penalize only the interaction terms by setting the penalty.factor of the interaction terms to the same positive value and setting the penalty.factor of all other terms to zero. The explict form of the LASSO minimization goal is
 
@@ -776,7 +778,7 @@ In order to compare contrast the analyses, we will use the $\lambda_{min}$ from 
 
 ```{r}
 set.seed(1949)
-df_L = read.csv('../DL/final_stata_data.csv')
+df_L = read.csv('../DL/Final Documents/final_stata_data.csv')
 df_L = df_L  %>%
   mutate(gend_alco = gend*alcohol_s,
          gend_caff = gend*caff_s,
