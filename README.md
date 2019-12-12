@@ -53,9 +53,9 @@ The final scripts path are linked in the **Author** part and you can find runnin
 
 Since our purpose is to find how gender effect the relationship between the nutrition intake and the blood pressure measurement, we only penalize the interaction terms by setting the penalty.factor of the interaction terms with a same positive value and let other terms' zero. The explict form for LASSO minizing goal is shaped to
 
-<div align=center><img src="http://chart.googleapis.com/chart?cht=tx&chl= \underset{\beta}{\operatorname{minimize}} \quad \frac{1}{2} \frac{\operatorname{RSS}}{n}+ \lambda \sum_{j=1}^{p} \frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}" style="border:none;"></div>
-
+<div align=center>
 <a href="https://www.codecogs.com/eqnedit.php?latex=\underset{\beta}{\operatorname{minimize}}&space;\quad&space;\frac{1}{2}&space;\frac{\operatorname{RSS}}{n}&plus;&space;\lambda&space;\sum_{j=1}^{p}&space;\frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\underset{\beta}{\operatorname{minimize}}&space;\quad&space;\frac{1}{2}&space;\frac{\operatorname{RSS}}{n}&plus;&space;\lambda&space;\sum_{j=1}^{p}&space;\frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}" title="\underset{\beta}{\operatorname{minimize}} \quad \frac{1}{2} \frac{\operatorname{RSS}}{n}+ \lambda \sum_{j=1}^{p} \frac{c_{j}}{\bar{c}}\left\|\beta_{j}\right\|_{1}" /></a>
+</div>
 
 where <img src="http://chart.googleapis.com/chart?cht=tx&chl= c_j" style="border:none;"> is the penalty factor we used for each term
 
