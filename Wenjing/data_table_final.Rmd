@@ -1,0 +1,261 @@
+---
+title: "data_table_final"
+author: "Wenjzh"
+date: "12/11/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R using data.table, parallel computing and glmnet
+### _Preparing the Data_
+
+```{r dt, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# Libraries: ------------------------------------------------------------------
+install.packages("https://cran.r-project.org/src/contrib/doMC_1.3.6.tar.gz",
+                 repos = NULL, type = "source")
+require(doMC)
+library(Hmisc)
+library(tidyverse)
+library(data.table)
+library(glmnet)
+library(SASxport)
+library(kableExtra)
+
+# read in the  data: -----------------------------------------------------------
+## This data will be used in the question.
+url_base <- 'https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/'
+
+demo_file <- '../DATA/DEMO_I.XPT'
+if ( !file.exists(demo_file) ) {
+  demo_url <- sprintf('%s/DEMO_I.XPT', url_base)
+  demo <- sasxport.get(demo_url)
+  write.xport(demo, file = demo_file)
+} else {
+  demo <- sasxport.get(demo_file)
+}
+
+dr1_file <- '../DATA/DR1TOT_I.XPT'
+if ( !file.exists(dr1_file) ) {
+  dr1_url <- sprintf('%s/DR1TOT_I.XPT', url_base)
+  dr1 <- sasxport.get(dr1_url)
+  write.xport(dr1, file = dr1_file)
+} else {
+  dr1 <- sasxport.get(dr1_file)
+}
+
+dr2_file <- '../DATA/DR2TOT_I.XPT'
+if ( !file.exists(demo_file) ) {
+  dr2_url <- sprintf('%s/DR2TOT_I.XPT', url_base)
+  dr2 <- sasxport.get(dr2_url)
+  write.xport(dr2, file = dr2_file)
+} else {
+  dr2 <- sasxport.get(dr2_file)
+}
+
+bpx_file <- '../DATA/BPX_I.XPT'
+if ( !file.exists(bpx_file) ) {
+  bpx_url <- sprintf('%s/BPX_I.XPT', url_base)
+  bpx <- sasxport.get(bpx_url)
+  write.xport(bpx, file = bpx_file)
+} else {
+  bpx <- sasxport.get(bpx_file)
+}
+
+dr1 <-as.data.table(dr1)
+dr2 <-as.data.table(dr2)
+demo <-as.data.table(demo)
+bpx <-as.data.table(bpx)
+
+```
+
+First, we imported all the 2015-2016 NHANES datasets into R as data.tables. Then we chose our variables of interested and combined the four data.tables into one. All observations with any missing data were dropped. Below is the code for the data cleaning process.
+
+```{r prepare, include=TRUE}
+# Choose variables
+dr1 = dr1[,.(seqn, dr1talco,dr1.320z,dr1tcaff,dr1tsodi,
+             dr1ttfat,dr1tsugr,dr1tiron,dr1tfibe,dr1tprot)]
+dr2 = dr2[,.(seqn, dr2talco,dr2.320z,dr2tcaff,dr2tsodi,
+             dr2ttfat,dr2tsugr,dr2tiron,dr2tfibe,dr2tprot)]
+demo = demo[,.(seqn = seqn, age = ridageyr, pir = indfmpir, gender = riagendr)]
+bpx = bpx[,.(seqn = seqn,
+             # most people havn't test 4 so we just ignore it
+             systolic = (bpxsy1+bpxsy2+bpxsy3)/3,
+             diastolic = (bpxdi1+bpxdi2+bpxdi3)/3)][,
+             diff:=systolic-diastolic
+             ]
+
+# Combine the four data tables and drop the missing values
+mydata=dr1[dr2,on = 'seqn'][demo, , on = 'seqn'][bpx,,on = 'seqn'][,
+          .(id = seqn, systolic, diastolic, diff, gender,
+            alco = (dr1talco+dr2talco)/2, water = (dr1.320z+dr2.320z)/2,
+            caff = (dr1tcaff+dr2tcaff)/2, sodi = (dr1tsodi+dr2tsodi)/2,
+            fat = (dr1ttfat+dr2ttfat)/2, sugr = (dr1tsugr+dr2tsugr)/2,
+            iron = (dr1tiron+dr2tiron)/2, fibe = (dr1tfibe+dr2tfibe)/2,
+            prot = (dr1tprot+dr2tprot)/2)][! is.na(id) & ! is.na(systolic) &
+            ! is.na(diastolic) & ! is.na(gender) & ! is.na(alco) &
+            ! is.na(water) & ! is.na(caff) & ! is.na(sodi) &
+            ! is.na(fat) & ! is.na(sugr) & ! is.na(iron) &
+            ! is.na(fibe) & ! is.na(prot), ]
+```
+
+### _CV using parallel computing and LASSO in glmnet_
+At first, we planned to use the lars package for LASSO, but we can not add penalty weights in lars. Thus, we chose to use the glmnet package instead. The functions "cv.glmnet", "plot.cv.glmnet" and "glmnet" were utilized.
+
+#### *Response and Predictor Variables*
+The response variables are systolic blood pressure and the difference in blood pressures, which combined can more accurately reflect one's blood pressure. The predictor variables, though, need to be standardized before they could be put into the model. Here is the code to standardize the predictor variables:
+```{r normalize, echo = TRUE, results = "hide"}
+# Normalize the nutrition predictors
+mydata[,6:14] <- lapply(mydata[,6:14], function(x) c(scale(x)))
+
+# Change gender 1/2 to -0.5/0.5
+mydata = mydata[, gender := ifelse(gender==1, 0.5, -0.5)]
+```
+
+Gender was turned from 1 for 'male' and 2 for 'female' into 0.5 for 'male' and -0.5 for 'female', which makes interpretation of the coefficients of the interaction terms more meaningful.
+
+#### *Interaction Terms*
+
+Before doing the LASSO modeling, we added the interaction terms between gender and the nutrition predictors.
+```{r interaction, echo = TRUE, results = "hide"}
+mydata = mydata[, .(systolic, diff, gender,alco,water,caff,sodi,fat,sugr,iron,fibe,prot,
+                    gender_alco = gender*alco,
+                    gender_water = gender*water,
+                    gender_caff = gender*caff,
+                    gender_sodi = gender*sodi,
+                    gender_fat = gender*fat,
+                    gender_sugr = gender*sugr,
+                    gender_iron = gender*iron,
+                    gender_fibe = gender*fibe,
+                    gender_prot = gender*prot)]
+```
+
+
+#### *Penalty Weights*
+Because we're only interested in the remaining interaction terms, we only want to set L1-norm penalties on the coefficients of the interaction terms. Thus, we set penalty weight = 1 for the interaction terms (ex. gender_alco) while not penalizing  the independent terms (ex. alco and gender) by setting penalty weight = 0. We would have a penalty factor of:
+
+````{r penalize factor, echo = TRUE, results = "hide"}
+# Only penalize the interaction terms
+pnfc=c(rep(0,10),rep(1,9))
+```
+
+In our data.table, the first two columns are the response variables; the 3rd to 10th columns are independent predictors and 11th to 21st columns are the interaction terms.
+
+#### *Cross Validation using parallel computing*
+
+Using "cv.glmnet" to choose the lambda with minimum MSE. In general, little inflation of lambda did not cause dramatic differences in LASSO results.
+
+```{r glmnet, echo = TRUE, results = "hide"}
+# LASSO using glmnet package: alpha = 1 ---------------------------------------
+# install.packages("https://cran.r-project.org/src/contrib/doMC_1.3.6.tar.gz",
+#                 repos = NULL, type = "source")
+# require(doMC)
+
+# cross-validation using parallel computing
+doMC::registerDoMC(cores=4)
+cv_lambda = function (x, y, nfolds = 10) {
+  # Description: cross-validation to find lambda with minimum
+  # MSE using parallel computing
+  #
+  # Input:
+  # x - predictor matrix
+  # y - response matrix
+  # nfolds - number of folds;default is 10
+  #
+  # Output: lambda with minimum MSE 
+  N = nrow(x)
+  weights = rep(1, N)
+  object = glmnet(x, y, weights = weights,
+                         family="gaussian",penalty.factor=pnfc,alpha = 1)
+  type.measure = cvtype("mse", class(object)[[1]])
+  foldid = sample(rep(seq(nfolds), length = N))
+  outlist = as.list(seq(nfolds))
+  outlist = foreach(i = seq(nfolds), .packages = c("glmnet")) %dopar% 
+    {
+      which = foldid == i
+      if (length(dim(y)) > 1) 
+        y_sub = y[!which, ]
+      else y_sub = y[!which]
+      offset_sub = NULL
+      glmnet(x[!which, , drop = FALSE], y_sub, 
+             offset = offset_sub, weights = weights[!which], 
+             family="gaussian",penalty.factor=pnfc,alpha = 1)
+    }
+  lambda = object$lambda
+  cvstuff = do.call("cv.elnet",list(outlist,lambda,x,y,weights,offset = NULL,
+                                     foldid, type.measure, grouped = TRUE,
+                                     keep = FALSE, alignment = "lambda"))
+  cvm = cvstuff$cvm
+  lambda.min=lambda[which.min(cvm)]
+  
+  #output
+  object_cv = list(lambda = lambda, mse=cvm, lambda.min=lambda.min)
+  object_cv
+}
+
+mydata = as.matrix(mydata)
+set.seed(000)
+cv_syst = cv_lambda(x=mydata[,3:21],y=mydata[,1])
+lambda_syst = cv_syst$lambda.min
+
+cv_diff = cv_lambda(x=mydata[,3:21],y=mydata[,2])
+lambda_diff = cv_diff$lambda.min
+
+```
+
+However, there is one thing we have to pay attention to. From the plots, it is obvious that the curve id not convex, so if we get the lambda of the edge condition (in the first plot, it is the point around 0.2, which may also be chosen as the lambda with minimum MSE), the penalized coefficients will all be shrinked to 0, which is definitely not what we want. Thus, we avoid that by setting seed and choosing proper cross validation result.
+
+Here is the CV plot to choose lambda for the systolic model:
+
+```{r, echo = FALSE, out.width = '50%', fig.align='center'}
+plot(cv_syst$lambda, cv_syst$mse, ylab = "Mean standard error", xlab = "lambda",
+     main = "Cross-validation for lambda in systolic pressure")
+abline(v = cv_syst$lambda.min)
+```
+
+And here is the CV plot to choose lambda for the difference model:
+
+```{r, echo = FALSE, out.width = '50%', fig.align='center'}
+plot(cv_diff$lambda, cv_diff$mse, ylab = "Mean standard error", xlab = "lambda",
+     main = "Cross-validation for lambda in pressure difference")
+abline(v = cv_diff$lambda.min)
+```
+
+#### *Modeling*
+
+After the preparation work is complete, we applied the chosen lambda and penalty factor to the glmnet function, only penalizing the interaction terms.
+
+```{r model}
+lars_syst = 
+  glmnet(x=mydata[,3:21],y=mydata[,1], penalty.factor=pnfc, family="gaussian",
+         lambda=lambda_syst, alpha = 1,nlambda=100)
+
+lars_diff = 
+  glmnet(x=mydata[,3:21],y=mydata[,2], penalty.factor=pnfc, family="gaussian",
+         lambda=lambda_diff, alpha = 1,nlambda=100)
+```
+
+### _Results_
+We are only focused on the coefficients of the interaction terms. Here are the resulting coefficients from the two models. 
+
+```{r collection, echo = FALSE}
+# data collection
+coef1 = coef(lars_syst)
+coef2 = coef(lars_diff)
+coef = cbind(coef1, coef2)
+lambda = cbind(lambda_syst, lambda_diff)
+rownames(lambda) = "lambda_min_mse"
+coef = rbind(coef, lambda)
+colnames(coef) = c("systolic", "difference")
+coef_int = as.matrix(coef)[c(2,12:21),]
+knitr::kable(coef_int, digits=3, caption = "Nutrition Influence on Blood Pressure Across Gender")%>%
+  kable_styling(full_width = F)
+```
+
+Remember that gender = 0.5 representing male and -0.5 representing female. From previous research, we know that hypertension is more common in men than in women, which is also supported by our results: coefficients of gender in both model are negative.
+
+In the first model, with systolic blood pressure as the response, the variables with the greatest difference between men and women are sodium, alcohol, and caffeine. We can see that men's systolic blood pressure is more effected by alcohol and sodium, while women's blood pressure is more effected by caffeine. In the second model, with difference between systolic and diastolic blood pressure as the response, the variables with the greatest difference between men and women are sodium, alcohol, fat, water, and caffeine. We can see that men's difference in blood pressure is more effected by sodium, alcohol and fat, while women's difference in blood pressure is more effected by caffeine and water.
+
+To make a robust conclusion, we have considered both models together. Men's blood pressure in general is more effected by sodium and alcohol, while women's blood pressure is more effected by caffeine.
