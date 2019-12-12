@@ -1,12 +1,12 @@
 /* 506 Group Project: Group 2 Stata Analysis*/
-/* */
-/* Author: Diana Liang*/
-/* Last Update: 12/10/2019*/
-/* --------------------------------------------------*/
-/* Which predictor variables of blood pressure differ the greatest between males and females?*/
-/**/
-/* The code below will answer this question by first preparing the data and then using LASSO to penalize the interaction terms between the predictor variables and gender.*/
-/*---------------------------------------------------*/
+/* 
+/* Author: Diana Liang
+/* Last Update: 12/10/2019
+/* --------------------------------------------------
+/* Which predictor variables of blood pressure differ the greatest between males and females?
+/*
+/* The code below will answer this question by first preparing the data and then using LASSO to penalize the interaction terms between the predictor variables and gender.
+/*---------------------------------------------------
 
 
 // Work with Demo dataset

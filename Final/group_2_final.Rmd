@@ -527,6 +527,17 @@ df %>% filter(gender == 0.5) %>% summarise(caff_avg_intake_men = mean(caff))
 
 ## Stata
 ```{r setup, include=FALSE}
+# Group Project: Group 2 Stata
+#
+# Author: Diana Liang
+# Last Update: 12/11/2019
+##----------------------------------------------------------
+# The following script is based off of the group_2_stata.do.
+# Parts of the do file are used here for demonstration. The
+# remaining R code creates plots and charts to display the
+# results.
+#-----------------------------------------------------------
+
 ## Set up libraries
 library(dplyr)
 library(tidyr)
