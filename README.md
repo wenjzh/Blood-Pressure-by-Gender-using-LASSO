@@ -2,6 +2,7 @@
 
 - [STATS 506 Group Project F19](#stats-506-group-project-f19)
   - [Author: Group 2](#author-group-2)
+  - [To Do](#to-do)
   - [Navigation](#navigation)
     - [Report](#report)
     - [Data Sets](#data-sets)
@@ -28,7 +29,7 @@ Customized Cross Validation function in data.table analysis
 ## Navigation
 
 ### Report
-The completed *report* in .html and .Rmd files are stored in **[Draft](./Draft)** folder.
+The completed *report* in .html and .Rmd files are stored in **[Final](./Final)** folder.
 
 ### Data Sets
 We’re using a combination of 4 datasets (Demographics, Blood Pressure, Total Nutrients day 1, Total Nutrients day 2) from the 2015-2016 NHANES, which are stored in **[DATA](./DATA)** folder.
@@ -42,10 +43,10 @@ We are working on both the [issues](https://github.com/Randyzhang98/STATS506_Pro
 The final scripts path are linked in the **Author** part and you can find running guidence in each folder's readme.md.
 
 ## Overview
- We choose to investigate whether both genders will react the same under the the effect of consumption habits on blood pressure, a known symptom of different chronic diseases. Will the factors that are most important in determining blood pressure be different between males the females? 
+ We choose to investigate whether both genders will react the same under the the effect of consumption habits on blood pressure, a known symptom of different chronic diseases. Will the factors that are most important in determining blood pressure be different between males the females?
 
 >**Whether both genders will react the same under the the effect of consumption habits on blood pressure**
- 
+
  We will show in the following analysis that there are certain foods that affect one gender more than the other, and that these foods change depending on the type of blood pressure being measured.
 
 ## Method: LASSO with customized penalty.factor
