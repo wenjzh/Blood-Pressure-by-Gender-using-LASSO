@@ -1132,10 +1132,78 @@ lambda_min_mse
 <h4><em>Result</em></h4>
 <p>Given our main purpose and the model setup, we are only interested in the interaction terms with non-zero coefficients. The interaction terms for systolic pressure and pressure difference are shown in the following tables.</p>
 <p>For systolic pressure:</p>
-<pre><code>## [1]  0.7463829 -0.3241309  0.5795180</code></pre>
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+LASSO Non_zero Interaction Coefficients for Systolic
+</caption>
+<tbody>
+<tr>
+<td style="text-align:left;">
+gender_alco
+</td>
+<td style="text-align:left;">
+gender_caff
+</td>
+<td style="text-align:left;">
+gender_sodi
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+0.746382885612908
+</td>
+<td style="text-align:left;">
+-0.324130947330328
+</td>
+<td style="text-align:left;">
+0.579517984207464
+</td>
+</tr>
+</tbody>
+</table>
 <p>From these coefficients, we can infer that, compared to men’s blood pressure, women’s systolic blood pressure is more likely to increase with the increase of caffeine intake. However, an increase of sodium or alcohol intake will affect more men’s systolic blood pressure more.</p>
-<p>For blood pressure difference:</p>
-<pre><code>## [1]  1.0450264 -0.9016541  0.8308087  0.1417114 -0.8740414</code></pre>
+For blood pressure difference:
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+LASSO Non_zero Interaction Coefficients for Difference
+</caption>
+<tbody>
+<tr>
+<td style="text-align:left;">
+gender_alco
+</td>
+<td style="text-align:left;">
+gender_caff
+</td>
+<td style="text-align:left;">
+gender_fat
+</td>
+<td style="text-align:left;">
+gender_sodi
+</td>
+<td style="text-align:left;">
+gender_water
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+1.04502643170388
+</td>
+<td style="text-align:left;">
+-0.901654090107304
+</td>
+<td style="text-align:left;">
+0.830808662599165
+</td>
+<td style="text-align:left;">
+0.141711364373038
+</td>
+<td style="text-align:left;">
+-0.874041376836915
+</td>
+</tr>
+</tbody>
+</table>
 <p>As the table above shows, we can infer that, compared to men’s blood pressure difference, women’s blood pressure difference is more likely to increase by an increase in caffeine or water intake. However, an increase of sodium, fat or alcohol intake will affect men’s difference in blood pressure more.</p>
 <p>In the blood pressure difference results, we see that interaction term with water is on the same scale as the term with caffeine, which might imply a correlation between the water and caffeine variables.</p>
 <p>Across these two responses, women’s blood pressure seems to be more affected by caffeine; and men’s blood pressure more affected by alcohol. However, the result doesn’t imply that women have a higher caffeine intake. The caffeine intake of women is actually lower than men’s. The most reasonable interpretation of these results is that women’s blood pressure is more sensitive to caffeine while men’s is more sensitive to alcohol.</p>

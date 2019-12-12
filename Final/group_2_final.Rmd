@@ -502,14 +502,19 @@ Given our main purpose and the model setup, we are only interested in the intera
 For systolic pressure:
 
 ```{r echo=FALSE}
-coef[c(12,13,18),1]
+knitr::kable( rbind(row.names(coef)[c(12,13,18)], (coef[c(12,13,18),1])),
+              caption = "LASSO Non_zero Interaction Coefficients for Systolic", digits = 5  ) %>%
+  kable_styling(full_width = F)
 ```
 
 From these coefficients, we can infer that, compared to men's blood pressure, women's systolic blood pressure is more likely to increase with the increase of caffeine intake. However, an increase of sodium or alcohol intake will affect more men's systolic blood pressure more.
 
 For blood pressure difference:
 ```{r echo=FALSE}
-coef[c(12,13,14,18,20),2]
+
+knitr::kable(rbind(row.names(coef)[c(12,13,14,18,20)],(coef[c(12,13,14,18,20),2])),
+              caption = "LASSO Non_zero Interaction Coefficients for Difference", digits = 5  ) %>%
+  kable_styling(full_width = F)
 ```
 
 As the table above shows, we can infer that, compared to men's blood pressure difference, women's blood pressure difference is more likely to increase by an increase in caffeine or water intake. However, an increase of sodium, fat or alcohol intake will affect men's difference in blood pressure more.
