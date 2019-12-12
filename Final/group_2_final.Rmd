@@ -547,7 +547,7 @@ Given our main purpose and the model setup, we are only interested in the intera
 For systolic pressure:
 
 ```{r echo=FALSE}
-knitr::kable( rbind(row.names(coef)[c(12,13,18)], (coef[c(12,13,18),1])),
+knitr::kable( rbind(row.names(coef)[c(12,13,18)], round(coef[c(12,13,18),1],5)),
               caption = "LASSO Non_zero Interaction Coefficients for Systolic", digits = 5  ) %>%
   kable_styling(full_width = F)
 ```
@@ -557,7 +557,7 @@ From these coefficients, we can infer that, compared to men's blood pressure, wo
 For blood pressure difference:
 ```{r echo=FALSE}
 
-knitr::kable(rbind(row.names(coef)[c(12,13,14,18,20)],(coef[c(12,13,14,18,20),2])),
+knitr::kable(rbind(row.names(coef)[c(12,13,14,18,20)],round(coef[c(12,13,14,18,20),2],5)),
               caption = "LASSO Non_zero Interaction Coefficients for Difference", digits = 5  ) %>%
   kable_styling(full_width = F)
 ```
