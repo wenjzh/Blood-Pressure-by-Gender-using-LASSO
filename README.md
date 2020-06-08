@@ -13,11 +13,11 @@
     - [Install Statamarkdown](#install-statamarkdown)
 
 ## Author: Group 2
-Diana Liang ([STATA](./DL/Final&#32;Documents/))
+Diana Liang ([STATA](./Cooperation/DL/Final&#32;Documents/))
 
-Sijun Zhang ([dplyr_glmnet](./ZSJ/FINAL/))
+Sijun Zhang ([dplyr_glmnet](./Cooperation/ZSJ/))
 
-Wenjing Zhou ([data.table_customized_cross-validation](./Wenjing/))
+Wenjing Zhou ([data.table_customized_cross-validation](./Cooperation/WJ/))
 
 ## Navigation
 
