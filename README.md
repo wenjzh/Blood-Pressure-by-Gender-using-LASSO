@@ -22,7 +22,7 @@ Wenjing Zhou ([data.table_customized_cross-validation](./Cooperation/WJZ/))
 ## Navigation
 
 ### Report
-The completed *report* in .html and .Rmd files are stored in **[Final](./Final)** folder.
+The completed *report* in .html and .Rmd files are stored in current folder.
 
 ### Data Sets
 We’re using a combination of 4 datasets (Demographics, Blood Pressure, Total Nutrients day 1, Total Nutrients day 2) from the 2015-2016 NHANES, which are stored in **[DATA](./DATA)** folder.
