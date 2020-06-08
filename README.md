@@ -17,7 +17,7 @@ Diana Liang ([STATA](./Cooperation/DL/Final&#32;Documents/))
 
 Sijun Zhang ([dplyr_glmnet](./Cooperation/ZSJ/))
 
-Wenjing Zhou ([data.table_customized_cross-validation](./Cooperation/WJ/))
+Wenjing Zhou ([data.table_customized_cross-validation](./Cooperation/WJZ/))
 
 ## Navigation
 
